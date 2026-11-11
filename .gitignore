@@ -1,0 +1,27 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+
+.env
+.env.*
+!.env.example
+
+.vercel/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+
+# Local database
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+data/*.sqlite3
+
+# Local test files
+scratch/
