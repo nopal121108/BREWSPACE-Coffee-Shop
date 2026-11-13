@@ -725,16 +725,6 @@ async function handleApi(req, res, pathname, query, body) {
           customerName ? customerName.trim() : 'Tamu',
           notes || null
         );
-        session.fullName,
-          calculatedSubtotal,
-          taxAmount,
-          totalAmount,
-          received,
-          changeAmount,
-          paymentMethod || 'cash',
-          customerName ? customerName.trim() : 'Tamu',
-          notes || null
-        );
 
         const transactionId = Number(resTrx.lastInsertRowid);
 
@@ -1032,19 +1022,6 @@ async function handleApi(req, res, pathname, query, body) {
         dateFilter += " AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', 'localtime')";
       } else if (startDate && endDate) {
         dateFilter += ' AND date(created_at) >= ? AND date(created_at) <= ?';
-        params.push(startDate, endDate);
-      }
-
-      if (period === 'today') {
-        dateFilter = "date(created_at) = date('now', 'localtime')";
-      } else if (period === 'yesterday') {
-        dateFilter = "date(created_at) = date('now', '-1 day', 'localtime')";
-      } else if (period === '7days') {
-        dateFilter = "created_at >= datetime('now', '-7 days', 'localtime')";
-      } else if (period === 'this_month') {
-        dateFilter = "strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now', 'localtime')";
-      } else if (startDate && endDate) {
-        dateFilter = 'date(created_at) >= ? AND date(created_at) <= ?';
         params.push(startDate, endDate);
       }
 
