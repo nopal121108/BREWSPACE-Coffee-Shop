@@ -137,16 +137,6 @@ export async function POST(req: NextRequest) {
         customerName ? customerName.trim() : 'Tamu',
         notes || null
       );
-      session.fullName,
-        calculatedSubtotal,
-        taxAmount,
-        totalAmount,
-        received,
-        changeAmount,
-        paymentMethod || 'cash',
-        customerName ? customerName.trim() : 'Tamu',
-        notes || null
-      );
 
       const transactionId = Number(resTrx.lastInsertRowid);
 
