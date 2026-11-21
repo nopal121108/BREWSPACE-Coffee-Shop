@@ -14,7 +14,8 @@ import {
   Users,
   Settings,
   LogOut,
-  Sparkles
+  Sparkles,
+  ClipboardCheck
 } from 'lucide-react';
 import { User } from '@/types';
 
@@ -39,25 +40,26 @@ export default function Sidebar({ user }: SidebarProps) {
 
   const isAdmin = user?.role === 'admin';
 
-  const navItems = [
-    ...(isAdmin ? [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] : []),
-    { href: '/pos', label: 'Kasir (POS)', icon: ShoppingCart },
-    ...(isAdmin
-      ? [
-        { href: '/products', label: 'Menu & Produk', icon: Coffee },
-        { href: '/categories', label: 'Kategori', icon: Tags },
-        { href: '/inventory', label: 'Stok & Mutasi', icon: Boxes },
-      ]
-      : []),
-    { href: '/transactions', label: 'Riwayat Transaksi', icon: Receipt },
-    ...(isAdmin
-      ? [
-        { href: '/reports', label: 'Laporan Omzet', icon: BarChart3 },
-        { href: '/users', label: 'Kelola Pengguna', icon: Users },
+  const navItems = isAdmin
+    ? [
+        { href: '/dashboard', label: 'Dashboard & Analytics', icon: LayoutDashboard },
+        { href: '/pos', label: 'Kasir (POS)', icon: ShoppingCart },
+        { href: '/menu', label: 'Buku Menu Digital', icon: Coffee },
+        { href: '/products', label: 'Manajemen Produk', icon: Sparkles },
+        { href: '/categories', label: 'Kategori Produk', icon: Tags },
+        { href: '/inventory', label: 'Manajemen Stok', icon: Boxes },
+        { href: '/transactions', label: 'Riwayat Transaksi', icon: Receipt },
+        { href: '/reports', label: 'Laporan Penjualan', icon: BarChart3 },
+        { href: '/users', label: 'Manajemen Pengguna', icon: Users },
         { href: '/settings', label: 'Pengaturan Toko', icon: Settings },
       ]
-      : []),
-  ];
+    : [
+        { href: '/pos', label: 'Kasir / Transaksi', icon: ShoppingCart },
+        { href: '/menu', label: 'Buku Menu Digital', icon: Coffee },
+        { href: '/transactions', label: 'Riwayat Transaksi', icon: Receipt },
+        { href: '/products-info', label: 'Informasi Produk', icon: Sparkles },
+        { href: '/profile', label: 'Profil Pengguna', icon: Users },
+      ];
 
   return (
     <aside className="w-64 bg-coffee-800 text-stone-200 flex flex-col shrink-0 min-h-screen border-r border-coffee-900 select-none no-print">
@@ -79,7 +81,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Navigation List */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <div className="px-3 pb-2 text-[10px] font-semibold tracking-wider text-coffee-400 uppercase">
-          Menu Operasional
+          {isAdmin ? 'Menu Administrator' : 'Operasional Kasir'}
         </div>
 
         {navItems.map((item) => {

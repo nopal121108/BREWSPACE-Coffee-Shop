@@ -8,27 +8,41 @@ export async function POST(req: NextRequest) {
     const { username, password } = body || {};
 
     if (!username || !password) {
-      return NextResponse.json({ success: false, error: 'Username dan password wajib diisi.' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Username dan kata sandi wajib diisi.' },
+        { status: 400 }
+      );
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim()) as any;
+    const trimmedUsername = username.trim();
+    // Case-insensitive query to support Admin, admin, ADMIN, etc.
+    const user = db.prepare('SELECT * FROM users WHERE LOWER(TRIM(username)) = LOWER(TRIM(?))').get(trimmedUsername) as any;
     if (!user) {
-      return NextResponse.json({ success: false, error: 'Username atau password salah.' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Username atau kata sandi salah.' },
+        { status: 401 }
+      );
     }
 
     if (user.status !== 'active') {
-      return NextResponse.json({ success: false, error: 'Akun Anda telah dinonaktifkan. Hubungi Admin.' }, { status: 403 });
+      return NextResponse.json(
+        { success: false, error: 'Akun Anda dinonaktifkan. Hubungi Admin.' },
+        { status: 403 }
+      );
     }
 
     const valid = verifyPassword(password, user.password_hash, user.salt);
     if (!valid) {
-      return NextResponse.json({ success: false, error: 'Username atau password salah.' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Username atau kata sandi salah.' },
+        { status: 401 }
+      );
     }
 
     const token = createSession(user);
     const response = NextResponse.json({
       success: true,
-      message: 'Login berhasil.',
+      message: `Selamat datang kembali, ${user.full_name}!`,
       token,
       user: {
         id: user.id,
@@ -38,17 +52,23 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Set secure HTTP-only cookie
+    // Set secure HTTP-only cookie with 24 hours validity
     response.cookies.set('brewspace_token', token, {
       path: '/',
       maxAge: 86400,
-      httpOnly: false,
-      sameSite: 'lax'
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
     });
 
     return response;
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('Error in /api/auth/login:', error);
+    return NextResponse.json(
+      { success: false, error: 'Terjadi kesalahan sistem saat memproses login.' },
+      { status: 500 }
+    );
   }
 }
+
 

@@ -8,19 +8,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const user = db.prepare('SELECT id, username, full_name, role, status, created_at FROM users WHERE id = ?').get(session.userId) as any;
-  if (!user || user.status !== 'active') {
-    return NextResponse.json({ success: false, error: 'User invalid' }, { status: 401 });
-  }
-
-  return NextResponse.json({
-    success: true,
-    user: {
-      id: user.id,
-      username: user.username,
-      fullName: user.full_name,
-      role: user.role
+  try {
+    const user = db.prepare('SELECT id, username, full_name, role, status FROM users WHERE id = ?').get(session.userId) as any;
+    if (!user || user.status !== 'active') {
+      return NextResponse.json({ success: false, error: 'Sesi tidak valid atau akun dinonaktifkan.' }, { status: 401 });
     }
-  });
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        fullName: user.full_name,
+        role: user.role
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in /api/auth/me:', error);
+    return NextResponse.json(
+      {
+        success: true,
+        user: {
+          id: session.userId,
+          username: session.username,
+          fullName: session.fullName,
+          role: session.role
+        }
+      }
+    );
+  }
 }
+
 

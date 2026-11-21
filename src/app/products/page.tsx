@@ -48,18 +48,23 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('brewspace_token') : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch('/api/auth/me', { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => {
-        if (!data.success || !data.user || data.user.role !== 'admin') {
+        if (!data.success || !data.user) {
+          router.push('/');
+        } else if (data.user.role !== 'admin') {
+          showToast('Akses ditolak: Manajemen Produk hanya dapat diakses oleh Administrator.', 'error');
           router.push('/pos');
         } else {
           setUser(data.user);
+          loadData();
         }
       })
       .catch(() => router.push('/'));
-
-    loadData();
   }, [router]);
 
   const openCreateModal = () => {

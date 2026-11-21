@@ -6,9 +6,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = extractSession(req, 'admin');
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'Unauthorized: Admin role required' }, { status: 401 });
+  const session = extractSession(req);
+  if (!session || session.role !== 'admin') {
+    return NextResponse.json({ success: false, error: 'Unauthorized: Admin role required' }, { status: 403 });
   }
 
   const { id } = await params;

@@ -29,30 +29,34 @@ export default function DashboardPage() {
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('brewspace_token') : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch('/api/auth/me', { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => {
         if (!data.success || !data.user) {
           router.push('/');
         } else if (data.user.role !== 'admin') {
+          showToast('Akses ditolak: Dashboard hanya dapat diakses oleh Administrator.', 'error');
           router.push('/pos');
         } else {
           setUser(data.user);
+          // Only admin loads stats
+          fetch('/api/admin/dashboard', { headers: authHeaders })
+            .then((res) => res.json())
+            .then((d) => {
+              if (d.success) {
+                setStats(d.stats);
+              } else {
+                showToast(d.error || 'Gagal memuat statistik.', 'error');
+              }
+            })
+            .catch(() => showToast('Kesalahan saat memuat data dashboard.', 'error'))
+            .finally(() => setLoading(false));
         }
       })
       .catch(() => router.push('/'));
-
-    fetch('/api/admin/dashboard')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setStats(data.stats);
-        } else {
-          showToast(data.error || 'Gagal memuat statistik.', 'error');
-        }
-      })
-      .catch(() => showToast('Kesalahan saat memuat data dashboard.', 'error'))
-      .finally(() => setLoading(false));
   }, [router, showToast]);
 
   const viewReceipt = async (id: number) => {

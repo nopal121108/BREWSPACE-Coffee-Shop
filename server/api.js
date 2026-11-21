@@ -10,6 +10,49 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
+// Global Mock Customer Orders Store for Approval System
+const mockCustomerOrders = [
+  {
+    id: 'ORD-20261117-001',
+    orderNumber: 'ORD-20261117-001',
+    customerId: 'cust_sample_1',
+    customerName: 'Budi Santoso',
+    tableNumber: 'Meja 03',
+    notes: 'Less sweet ya kak',
+    items: [
+      { productId: 1, name: 'Brewspace Aren Latte', categoryName: 'Signature Coffee', price: 28000, quantity: 2, subtotal: 56000 },
+      { productId: 12, name: 'Butter Croissant Artisanal', categoryName: 'Pastry & Bakery', price: 24000, quantity: 1, subtotal: 24000 }
+    ],
+    subtotal: 80000,
+    tax: 0,
+    totalAmount: 80000,
+    status: 'menunggu_konfirmasi',
+    statusNotes: 'Pesanan baru diajukan pelanggan, menunggu verifikasi kasir',
+    createdAt: new Date(Date.now() - 4 * 60000).toISOString(),
+    updatedAt: new Date(Date.now() - 4 * 60000).toISOString()
+  },
+  {
+    id: 'ORD-20261117-002',
+    orderNumber: 'ORD-20261117-002',
+    customerId: 'cust_sample_2',
+    customerName: 'Annisa Putri',
+    tableNumber: 'Meja 07',
+    notes: 'Extra ice',
+    items: [
+      { productId: 2, name: 'Caramel Macchiato Velvet', categoryName: 'Signature Coffee', price: 33000, quantity: 1, subtotal: 33000 }
+    ],
+    subtotal: 33000,
+    tax: 0,
+    totalAmount: 33000,
+    status: 'dikonfirmasi',
+    statusNotes: 'Pesanan telah diterima oleh kasir, antrean dapur',
+    createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
+    updatedAt: new Date(Date.now() - 12 * 60000).toISOString(),
+    confirmedAt: new Date(Date.now() - 12 * 60000).toISOString(),
+    confirmedBy: 'Siti Rahma (Kasir)'
+  }
+];
+
 // Helper to generate Invoice Number: TRX-YYYYMMDD-XXXX
 function generateInvoiceNumber() {
   const now = new Date();
@@ -57,7 +100,7 @@ async function handleApi(req, res, pathname, query, body) {
         return sendJson(res, 400, { success: false, error: 'Username dan password wajib diisi.' });
       }
 
-      const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username.trim());
+      const user = db.prepare('SELECT * FROM users WHERE LOWER(TRIM(username)) = LOWER(TRIM(?))').get(username.trim());
       if (!user) {
         return sendJson(res, 401, { success: false, error: 'Username atau password salah.' });
       }
@@ -72,6 +115,7 @@ async function handleApi(req, res, pathname, query, body) {
       }
 
       const token = createSession(user);
+      res.setHeader('Set-Cookie', `brewspace_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
       return sendJson(res, 200, {
         success: true,
         message: 'Login berhasil.',
@@ -86,11 +130,11 @@ async function handleApi(req, res, pathname, query, body) {
     }
 
     if (pathname === '/api/auth/logout' && req.method === 'POST') {
-      const session = requireAuth()(req, res);
-      if (session) {
-        const token = require('./auth').extractToken(req);
+      const token = require('./auth').extractToken(req);
+      if (token) {
         destroySession(token);
       }
+      res.setHeader('Set-Cookie', 'brewspace_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT');
       return sendJson(res, 200, { success: true, message: 'Logout berhasil.' });
     }
 
@@ -514,13 +558,9 @@ async function handleApi(req, res, pathname, query, body) {
       const session = requireAuth('admin')(req, res);
       if (!session) return;
 
-      const { productId, changeType, quantity, notes } = body || {};
-      if (!productId) return sendJson(res, 400, { success: false, error: 'Produk wajib dipilih.' });
-      if (!quantity || isNaN(quantity) || parseInt(quantity, 10) <= 0) {
-        return sendJson(res, 400, { success: false, error: 'Jumlah stok harus lebih dari 0.' });
-      }
+      const { productId, changeType, quantity, actualStock, notes } = body || {};
+      if (!productId) return sendJson(res, 400, { success: false, error: 'Bahan atau produk wajib dipilih.' });
 
-      const qty = parseInt(quantity, 10);
       const prod = db.prepare('SELECT id, name, stock FROM products WHERE id = ?').get(productId);
       if (!prod) return sendJson(res, 404, { success: false, error: 'Produk tidak ditemukan.' });
 
@@ -528,15 +568,34 @@ async function handleApi(req, res, pathname, query, body) {
       let newStock = prod.stock;
 
       if (changeType === 'restock') {
+        const qty = parseInt(quantity, 10);
+        if (!qty || isNaN(qty) || qty <= 0) {
+          return sendJson(res, 400, { success: false, error: 'Jumlah stok masuk harus lebih dari 0 unit.' });
+        }
         quantityChange = qty;
         newStock = prod.stock + qty;
       } else if (changeType === 'adjustment') {
-        // Can be addition or deduction based on note or payload
-        const direction = body.direction === 'subtract' ? -1 : 1;
-        quantityChange = direction * qty;
-        newStock = prod.stock + quantityChange;
+        // Mode Koreksi Fisik (Opname): pengguna memasukkan stok fisik sebenarnya
+        if (actualStock !== undefined && actualStock !== null && actualStock !== '') {
+          const actual = parseInt(actualStock, 10);
+          if (isNaN(actual) || actual < 0) {
+            return sendJson(res, 400, { success: false, error: 'Jumlah stok fisik sebenarnya tidak boleh bernilai negatif.' });
+          }
+          quantityChange = actual - prod.stock;
+          newStock = actual;
+        } else {
+          // Dukungan format penyesuaian unit manual
+          const qty = parseInt(quantity, 10);
+          if (isNaN(qty) || qty <= 0) {
+            return sendJson(res, 400, { success: false, error: 'Jumlah unit koreksi tidak valid.' });
+          }
+          const direction = body.direction === 'subtract' ? -1 : 1;
+          quantityChange = direction * qty;
+          newStock = prod.stock + quantityChange;
+        }
+
         if (newStock < 0) {
-          return sendJson(res, 400, { success: false, error: `Stok tidak mencukupi untuk pengurangan ini. Stok saat ini: ${prod.stock}` });
+          return sendJson(res, 400, { success: false, error: `Stok tidak boleh minus/negatif. Stok saat ini: ${prod.stock}` });
         }
       } else {
         return sendJson(res, 400, { success: false, error: 'Jenis perubahan stok tidak valid (restock / adjustment).' });
@@ -548,13 +607,17 @@ async function handleApi(req, res, pathname, query, body) {
         db.prepare(`
           INSERT INTO stock_movements (product_id, change_type, quantity_change, previous_stock, current_stock, notes, created_by)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run(productId, changeType, quantityChange, prod.stock, newStock, notes || 'Penyesuaian stok manual', session.fullName);
+        `).run(productId, changeType, quantityChange, prod.stock, newStock, notes || (changeType === 'restock' ? 'Restock bahan masuk' : 'Koreksi stok fisik'), session.fullName);
 
         db.exec('COMMIT;');
+        const diffText = quantityChange >= 0 ? `+${quantityChange}` : `${quantityChange}`;
         return sendJson(res, 200, {
           success: true,
-          message: `Stok untuk "${prod.name}" berhasil disesuaikan menjadi ${newStock}.`,
-          currentStock: newStock
+          message: changeType === 'restock'
+            ? `Berhasil restock ${prod.name} sebanyak +${quantityChange} unit. Stok baru: ${newStock}.`
+            : `Berhasil koreksi stok ${prod.name} (Selisih: ${diffText}). Stok fisik saat ini: ${newStock}.`,
+          currentStock: newStock,
+          quantityChange
         });
       } catch (err) {
         db.exec('ROLLBACK;');
@@ -1190,6 +1253,141 @@ async function handleApi(req, res, pathname, query, body) {
       }
 
       return sendJson(res, 200, { success: true, message: 'Data pengguna berhasil diperbarui.' });
+    }
+
+    // ==========================================
+    // 11. PUBLIC DIGITAL MENU & CUSTOMER ORDERS
+    // ==========================================
+    if (pathname === '/api/menu' && req.method === 'GET') {
+      const products = db.prepare(`
+        SELECT p.id, p.name, p.price, p.stock, p.min_stock, p.image_url, p.description,
+               c.id AS category_id, c.name AS category_name, c.slug AS category_slug
+        FROM products p
+        INNER JOIN categories c ON p.category_id = c.id
+        WHERE p.status = 'active' AND c.status = 'active'
+        ORDER BY c.name ASC, p.name ASC
+      `).all();
+      const categories = db.prepare("SELECT id, name, slug FROM categories WHERE status = 'active' ORDER BY name ASC").all();
+      return sendJson(res, 200, { success: true, products, categories });
+    }
+
+    if (pathname === '/api/orders' && req.method === 'GET') {
+      const customerId = query.customerId;
+      const catalog = query.catalog;
+
+      if (catalog === 'true') {
+        const products = db.prepare(`
+          SELECT p.id, p.name, p.price, p.stock, p.min_stock, p.image_url, p.description,
+                 c.id AS category_id, c.name AS category_name, c.slug AS category_slug
+          FROM products p
+          INNER JOIN categories c ON p.category_id = c.id
+          WHERE p.status = 'active' AND c.status = 'active'
+          ORDER BY c.name ASC, p.name ASC
+        `).all();
+        const categories = db.prepare("SELECT id, name, slug FROM categories WHERE status = 'active' ORDER BY name ASC").all();
+        return sendJson(res, 200, { success: true, products, categories });
+      }
+
+      if (customerId) {
+        const list = mockCustomerOrders.filter(o => o.customerId === customerId);
+        return sendJson(res, 200, { success: true, orders: list });
+      }
+
+      return sendJson(res, 200, { success: true, orders: mockCustomerOrders });
+    }
+
+    if (pathname === '/api/orders' && req.method === 'POST') {
+      const { customerId, customerName, tableNumber, notes, items } = body || {};
+      if (!customerName || !customerName.trim()) {
+        return sendJson(res, 400, { success: false, error: 'Nama pelanggan wajib diisi.' });
+      }
+      if (!items || !items.length) {
+        return sendJson(res, 400, { success: false, error: 'Keranjang belanja tidak boleh kosong.' });
+      }
+
+      const orderNumber = `ORD-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(100 + Math.random()*900)}`;
+      let subtotal = 0;
+      const orderItems = items.map(item => {
+        const price = Number(item.price) || 0;
+        const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+        const itemSubtotal = price * qty;
+        subtotal += itemSubtotal;
+        return {
+          productId: item.productId || item.id,
+          name: item.name,
+          categoryName: item.categoryName,
+          price,
+          quantity: qty,
+          subtotal: itemSubtotal
+        };
+      });
+
+      const newOrder = {
+        id: orderNumber,
+        orderNumber,
+        customerId: customerId || `cust_${Date.now()}`,
+        customerName: customerName.trim(),
+        tableNumber: tableNumber ? tableNumber.trim() : 'Meja Umum',
+        notes: notes ? notes.trim() : '',
+        items: orderItems,
+        subtotal,
+        tax: 0,
+        totalAmount: subtotal,
+        status: 'menunggu_konfirmasi',
+        statusNotes: 'Pesanan telah diajukan dan sedang menunggu konfirmasi kasir.',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      mockCustomerOrders.unshift(newOrder);
+      return sendJson(res, 201, { success: true, message: 'Pesanan berhasil diajukan.', order: newOrder });
+    }
+
+    if (pathname.startsWith('/api/orders/') && req.method === 'PATCH') {
+      const id = pathname.replace('/api/orders/', '');
+      const order = mockCustomerOrders.find(o => o.id === id || o.orderNumber === id);
+      if (!order) {
+        return sendJson(res, 404, { success: false, error: 'Pesanan tidak ditemukan.' });
+      }
+
+      const { action, customerId, rejectedReason } = body || {};
+
+      if (action === 'cancel') {
+        if (order.status !== 'menunggu_konfirmasi') {
+          return sendJson(res, 400, { success: false, error: 'Pesanan tidak dapat dibatalkan karena sudah dikonfirmasi kasir.' });
+        }
+        order.status = 'dibatalkan';
+        order.statusNotes = 'Pesanan dibatalkan oleh pelanggan.';
+        order.cancelledAt = new Date().toISOString();
+        return sendJson(res, 200, { success: true, message: 'Pesanan berhasil dibatalkan.', order });
+      }
+
+      const session = requireAuth()(req, res);
+      if (!session) return;
+
+      const now = new Date().toISOString();
+      if (action === 'confirm') {
+        order.status = 'dikonfirmasi';
+        order.confirmedAt = now;
+        order.confirmedBy = session.fullName;
+        order.statusNotes = 'Pesanan dikonfirmasi oleh kasir dan masuk antrean.';
+      } else if (action === 'reject') {
+        order.status = 'ditolak';
+        order.rejectedReason = rejectedReason || 'Ditolak oleh kasir.';
+        order.statusNotes = 'Pesanan ditolak: ' + (rejectedReason || 'Ditolak');
+      } else if (action === 'prepare') {
+        order.status = 'sedang_disiapkan';
+        order.statusNotes = 'Pesanan sedang diracik / disiapkan di dapur.';
+      } else if (action === 'ready') {
+        order.status = 'siap_diambil';
+        order.statusNotes = 'Pesanan siap diambil di counter pick-up.';
+      } else if (action === 'complete') {
+        order.status = 'selesai';
+        order.statusNotes = 'Pesanan telah selesai diserahkan ke pelanggan.';
+      }
+
+      order.updatedAt = now;
+      return sendJson(res, 200, { success: true, message: 'Status pesanan berhasil diperbarui.', order });
     }
 
     // Default route not found

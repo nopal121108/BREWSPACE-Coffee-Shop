@@ -4,11 +4,12 @@
   'use strict';
 
   // Application State
+  // Application State
   const state = {
-    token: localStorage.getItem('brewspace_token') || null,
-    user: JSON.parse(localStorage.getItem('brewspace_user') || 'null'),
-    activeView: 'dashboard', // dashboard, pos, products, transactions, reports, users, settings
-    productActiveTab: 'list', // list, categories, stocks
+    token: null,
+    user: null,
+    activeView: 'dashboard', // dashboard, pos, products, categories, stocks, mutations, transactions, reports, users, settings
+    productActiveTab: 'list', // list, categories, stocks, mutations
     cart: [],
     posProducts: [],
     posCategories: [],
@@ -29,6 +30,144 @@
       tax_percentage: '0'
     },
     isSubmitting: false
+  };
+
+  // In-Memory Mock Store (Tanpa Database)
+  const mockStore = {
+    settings: {
+      store_name: 'BREWSPACE Coffee & Roastery',
+      store_tagline: 'Crafted Coffee & Artisan Bakery',
+      store_address: 'Jl. Senopati No. 42, Kebayoran Baru, Jakarta Selatan',
+      store_phone: '+62 812-3456-7890',
+      receipt_footer: 'Terima kasih telah berkunjung ke BREWSPACE! Follow IG @brewspace.id',
+      currency_symbol: 'Rp',
+      tax_percentage: '0'
+    },
+    categories: [
+      { id: 1, name: 'Espresso Based', description: 'Kopi klasik berbasis espresso premium', status: 'active', product_count: 4 },
+      { id: 2, name: 'Signature Coffee', description: 'Minuman kopi kreasi khas barista BREWSPACE', status: 'active', product_count: 2 },
+      { id: 3, name: 'Manual Brew', description: 'Seduhan biji single origin pilihan', status: 'active', product_count: 2 },
+      { id: 4, name: 'Non-Coffee', description: 'Minuman segar teh, matcha, dan cokelat murni', status: 'active', product_count: 3 },
+      { id: 5, name: 'Artisan Pastry', description: 'Pastry segar renyah dipanggang setiap pagi', status: 'active', product_count: 3 },
+      { id: 6, name: 'Main Course', description: 'Makanan berat & rice bowl lezat mengenyangkan', status: 'active', product_count: 1 }
+    ],
+    products: [
+      { id: 1, category_id: 1, category_name: 'Espresso Based', name: 'Espresso Double Shot', sku: 'ESP-001', price: 22000, cost_price: 8000, stock: 45, min_stock: 10, unit: 'Cup', status: 'active', description: 'Double shot espresso dari 100% Arabica blend pilihan.' },
+      { id: 2, category_id: 1, category_name: 'Espresso Based', name: 'Americano Classic', sku: 'AME-002', price: 25000, cost_price: 9000, stock: 38, min_stock: 10, unit: 'Cup', status: 'active', description: 'Espresso dengan air panas atau dingin segar.' },
+      { id: 3, category_id: 1, category_name: 'Espresso Based', name: 'Caffe Latte', sku: 'LAT-003', price: 32000, cost_price: 13000, stock: 25, min_stock: 10, unit: 'Cup', status: 'active', description: 'Espresso dengan steamed fresh milk lembut dan gurih.' },
+      { id: 4, category_id: 1, category_name: 'Espresso Based', name: 'Cappuccino Creamy', sku: 'CAP-004', price: 32000, cost_price: 13000, stock: 18, min_stock: 10, unit: 'Cup', status: 'active', description: 'Perpaduan seimbang espresso, steamed milk, dan busa susu tebal.' },
+      { id: 5, category_id: 2, category_name: 'Signature Coffee', name: 'Caramel Macchiato', sku: 'MAC-005', price: 38000, cost_price: 16000, stock: 15, min_stock: 10, unit: 'Cup', status: 'active', description: 'Vanilla milk, espresso, dan saus karamel premium.' },
+      { id: 6, category_id: 2, category_name: 'Signature Coffee', name: 'Aren Cream Coffee', sku: 'ACC-006', price: 28000, cost_price: 11000, stock: 5, min_stock: 10, unit: 'Cup', status: 'active', description: 'Kopi susu gula aren asli khas Nusantara dengan hint creamy.' },
+      { id: 7, category_id: 3, category_name: 'Manual Brew', name: 'V60 Single Origin Gayo', sku: 'V60-007', price: 35000, cost_price: 14000, stock: 20, min_stock: 5, unit: 'Cup', status: 'active', description: 'Seduhan manual V60 beraroma floral dan fruity manis.' },
+      { id: 8, category_id: 3, category_name: 'Manual Brew', name: 'Japanese Iced Drip', sku: 'JAP-008', price: 38000, cost_price: 15000, stock: 12, min_stock: 5, unit: 'Cup', status: 'active', description: 'Manual drip langsung di atas es batu dengan aroma jernih.' },
+      { id: 9, category_id: 4, category_name: 'Non-Coffee', name: 'Matcha Green Tea Latte', sku: 'MTC-009', price: 34000, cost_price: 14000, stock: 22, min_stock: 8, unit: 'Cup', status: 'active', description: 'Pure Uji Matcha autentik berpadu susu segar nikmat.' },
+      { id: 10, category_id: 4, category_name: 'Non-Coffee', name: 'Dark Chocolate Royale', sku: 'CHO-010', price: 32000, cost_price: 13000, stock: 14, min_stock: 8, unit: 'Cup', status: 'active', description: 'Cokelat Belgia pekat 70% dengan rasa manis pahit seimbang.' },
+      { id: 11, category_id: 4, category_name: 'Non-Coffee', name: 'Earl Grey Milk Tea', sku: 'EGL-011', price: 30000, cost_price: 11000, stock: 30, min_stock: 8, unit: 'Cup', status: 'active', description: 'Teh bergamot aromatik dipadukan susu creamy segar.' },
+      { id: 12, category_id: 5, category_name: 'Artisan Pastry', name: 'Butter Croissant', sku: 'CRS-012', price: 24000, cost_price: 10000, stock: 8, min_stock: 10, unit: 'Pcs', status: 'active', description: 'Croissant renyah berlapis dengan mentega Prancis harum.' },
+      { id: 13, category_id: 5, category_name: 'Artisan Pastry', name: 'Pain Au Chocolat', sku: 'PAC-013', price: 28000, cost_price: 12000, stock: 0, min_stock: 5, unit: 'Pcs', status: 'active', description: 'Pastry renyah dengan isian cokelat lumer berkualitas.' },
+      { id: 14, category_id: 5, category_name: 'Artisan Pastry', name: 'Cinnamon Roll', sku: 'CNR-014', price: 26000, cost_price: 11000, stock: 12, min_stock: 5, unit: 'Pcs', status: 'active', description: 'Roti gulung kayu manis lembut bertabur cream cheese glaze.' },
+      { id: 15, category_id: 6, category_name: 'Main Course', name: 'Truffle Beef Rice Bowl', sku: 'MC-015', price: 48000, cost_price: 24000, stock: 16, min_stock: 5, unit: 'Porsi', status: 'active', description: 'Nasi hangat dengan irisan daging sapi empuk saus truffle aromatik.' }
+    ],
+    stockMovements: [
+      { id: 1, product_id: 1, product_name: 'Espresso Double Shot', change_type: 'restock', quantity_change: 20, previous_stock: 25, current_stock: 45, reference_id: 'RST-1001', notes: 'Restock biji kopi House Blend 20kg', created_at: '2026-11-14 08:30', created_by: 'Budi Santoso (Admin)' },
+      { id: 2, product_id: 6, product_name: 'Aren Cream Coffee', change_type: 'adjustment', quantity_change: -2, previous_stock: 7, current_stock: 5, reference_id: 'OPN-1002', notes: 'Koreksi fisik stock opname pagi (selisih takaran)', created_at: '2026-11-14 09:15', created_by: 'Budi Santoso (Admin)' },
+      { id: 3, product_id: 13, product_name: 'Pain Au Chocolat', change_type: 'damage', quantity_change: -3, previous_stock: 3, current_stock: 0, reference_id: 'DMG-1003', notes: 'Display rusak / melewati batas waktu kelayakan', created_at: '2026-11-14 10:00', created_by: 'Budi Santoso (Admin)' },
+      { id: 4, product_id: 3, product_name: 'Caffe Latte', change_type: 'sale', quantity_change: -2, previous_stock: 27, current_stock: 25, reference_id: 'TRX-20261114-0001', notes: 'Penjualan POS Kasir', created_at: '2026-11-14 10:30', created_by: 'Siti Rahma (Kasir 1)' },
+      { id: 5, product_id: 5, product_name: 'Caramel Macchiato', change_type: 'sale', quantity_change: -1, previous_stock: 16, current_stock: 15, reference_id: 'TRX-20261114-0002', notes: 'Penjualan POS Kasir', created_at: '2026-11-14 11:15', created_by: 'Siti Rahma (Kasir 1)' },
+      { id: 6, product_id: 12, product_name: 'Butter Croissant', change_type: 'sale', quantity_change: -1, previous_stock: 9, current_stock: 8, reference_id: 'TRX-20261114-0002', notes: 'Penjualan POS Kasir', created_at: '2026-11-14 11:15', created_by: 'Siti Rahma (Kasir 1)' }
+    ],
+    transactions: [
+      {
+        id: 1,
+        invoice_number: 'TRX-20261114-0001',
+        invoiceNumber: 'TRX-20261114-0001',
+        customer_name: 'Kak Dimas',
+        customerName: 'Kak Dimas',
+        cashier_name: 'Siti Rahma (Kasir 1)',
+        cashierName: 'Siti Rahma (Kasir 1)',
+        subtotal: 64000,
+        tax: 0,
+        discount: 0,
+        total_amount: 64000,
+        totalAmount: 64000,
+        cash_received: 100000,
+        cashReceived: 100000,
+        change_amount: 36000,
+        changeAmount: 36000,
+        payment_method: 'cash',
+        paymentMethod: 'cash',
+        payment_status: 'completed',
+        status: 'completed',
+        notes: 'Dine in - Meja 03',
+        created_at: '2026-11-14 10:30',
+        date: '2026-11-14 10:30',
+        items: [
+          { product_id: 3, name: 'Caffe Latte', product_name: 'Caffe Latte', category_name: 'Espresso Based', price: 32000, quantity: 2, subtotal: 64000 }
+        ]
+      },
+      {
+        id: 2,
+        invoice_number: 'TRX-20261114-0002',
+        invoiceNumber: 'TRX-20261114-0002',
+        customer_name: 'Nadia Putri',
+        customerName: 'Nadia Putri',
+        cashier_name: 'Siti Rahma (Kasir 1)',
+        cashierName: 'Siti Rahma (Kasir 1)',
+        subtotal: 62000,
+        tax: 0,
+        discount: 0,
+        total_amount: 62000,
+        totalAmount: 62000,
+        cash_received: 62000,
+        cashReceived: 62000,
+        change_amount: 0,
+        changeAmount: 0,
+        payment_method: 'qris',
+        paymentMethod: 'qris',
+        payment_status: 'completed',
+        status: 'completed',
+        notes: 'Take away',
+        created_at: '2026-11-14 11:15',
+        date: '2026-11-14 11:15',
+        items: [
+          { product_id: 5, name: 'Caramel Macchiato', product_name: 'Caramel Macchiato', category_name: 'Signature Coffee', price: 38000, quantity: 1, subtotal: 38000 },
+          { product_id: 12, name: 'Butter Croissant', product_name: 'Butter Croissant', category_name: 'Artisan Pastry', price: 24000, quantity: 1, subtotal: 24000 }
+        ]
+      },
+      {
+        id: 3,
+        invoice_number: 'TRX-20261114-0003',
+        invoiceNumber: 'TRX-20261114-0003',
+        customer_name: 'Budi Santoso',
+        customerName: 'Budi Santoso',
+        cashier_name: 'Ahmad Fauzi (Kasir 2)',
+        cashierName: 'Ahmad Fauzi (Kasir 2)',
+        subtotal: 35000,
+        tax: 0,
+        discount: 0,
+        total_amount: 35000,
+        totalAmount: 35000,
+        cash_received: 50000,
+        cashReceived: 50000,
+        change_amount: 15000,
+        changeAmount: 15000,
+        payment_method: 'cash',
+        paymentMethod: 'cash',
+        payment_status: 'void',
+        status: 'void',
+        notes: 'Salah pilih biji kopi pesanan',
+        created_at: '2026-11-14 11:45',
+        date: '2026-11-14 11:45',
+        items: [
+          { product_id: 7, name: 'V60 Single Origin Gayo', product_name: 'V60 Single Origin Gayo', category_name: 'Manual Brew', price: 35000, quantity: 1, subtotal: 35000 }
+        ]
+      }
+    ],
+    users: [
+      { id: 1, username: 'admin', full_name: 'Budi Santoso (Admin)', role: 'admin', status: 'active', created_at: '2026-01-01' },
+      { id: 2, username: 'kasir', full_name: 'Siti Rahma (Kasir 1)', role: 'kasir', status: 'active', created_at: '2026-01-15' },
+      { id: 3, username: 'kasir2', full_name: 'Ahmad Fauzi (Kasir 2)', role: 'kasir', status: 'active', created_at: '2026-02-01' }
+    ]
   };
 
   // Helper: Format Rupiah (IDR)
@@ -100,7 +239,7 @@
     }, 4000);
   }
 
-  // API Request Wrapper
+  // API Request Wrapper - Connects directly to backend API
   async function api(endpoint, options = {}) {
     const headers = options.headers || {};
     headers['Content-Type'] = 'application/json';
@@ -112,11 +251,12 @@
     try {
       const res = await fetch(endpoint, {
         ...options,
-        headers
+        headers,
+        credentials: 'same-origin'
       });
 
       const data = await res.json().catch(() => ({}));
-      
+
       if (res.status === 401) {
         logout(false);
         showToast('Sesi masuk telah berakhir. Silakan login kembali.', 'warning');
@@ -130,7 +270,7 @@
       return data;
     } catch (err) {
       console.error(`API Error on ${endpoint}:`, err);
-      showToast(err.message, 'error');
+      showToast(err.message || 'Gagal menghubungi server.', 'error');
       return null;
     }
   }
@@ -178,10 +318,8 @@
     if (res && res.success) {
       state.token = res.token;
       state.user = res.user;
-      localStorage.setItem('brewspace_token', res.token);
-      localStorage.setItem('brewspace_user', JSON.stringify(res.user));
 
-      showToast(`Selamat datang kembali, ${res.user.fullName}!`, 'success');
+      showToast(`Selamat datang, ${res.user.fullName}!`, 'success');
 
       if (res.user.role === 'admin') {
         state.activeView = 'dashboard';
@@ -198,7 +336,7 @@
     }
   }
 
-  // Authentication: Logout
+  // Authentication: Logout / Ganti Role
   async function logout(callApi = true) {
     if (callApi && state.token) {
       await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -206,8 +344,6 @@
     state.token = null;
     state.user = null;
     state.cart = [];
-    localStorage.removeItem('brewspace_token');
-    localStorage.removeItem('brewspace_user');
     renderApp();
   }
 
@@ -215,8 +351,9 @@
   function navigateTo(view, subTab = null) {
     // Role-based route protection
     if (state.user && state.user.role === 'kasir') {
-      if (view !== 'pos' && view !== 'transactions') {
-        showToast('Akses dibatasi: Kasir hanya dapat mengakses kasir dan riwayat transaksi.', 'warning');
+      const allowedKasirViews = ['pos', 'digital_menu', 'orders', 'transactions', 'products_info', 'profile'];
+      if (!allowedKasirViews.includes(view)) {
+        showToast('Akses ditolak: Menu ini hanya dapat diakses oleh Administrator.', 'warning');
         view = 'pos';
       }
     }
@@ -253,18 +390,23 @@
 
           <!-- Form Area -->
           <div style="padding: 1.75rem 2rem 2rem;">
-            <div id="login-error-banner" style="display: none; background: #FDEDEC; border: 1px solid #FFCDD2; color: #C62828; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8125rem; font-weight: 500; margin-bottom: 1.25rem; text-align: center;">
+            <div id="login-error-banner" style="display: none; background: #FDEDEC; border: 1px solid #FFCDD2; color: #C62828; padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8125rem; font-weight: 500; margin-bottom: 1.25rem; text-align: center;">
             </div>
 
             <form id="login-form">
               <div class="form-group">
-                <label class="form-label" for="login-username">Username</label>
-                <input type="text" id="login-username" class="form-control" placeholder="admin atau kasir" required autofocus>
+                <label class="form-label" for="login-username">Username atau Email</label>
+                <input type="text" id="login-username" class="form-control" placeholder="Masukkan username" required autofocus autocomplete="username">
               </div>
 
               <div class="form-group" style="margin-bottom: 1.5rem;">
                 <label class="form-label" for="login-password">Kata Sandi</label>
-                <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                <div style="position: relative; display: flex; align-items: center;">
+                  <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password" style="padding-right: 2.5rem; width: 100%;">
+                  <button type="button" id="btn-toggle-password" style="position: absolute; right: 0.5rem; background: transparent; border: none; cursor: pointer; color: var(--color-text-muted); padding: 0.4rem; display: flex; align-items: center; justify-content: center;" title="Tampilkan/Sembunyikan kata sandi">
+                    <span id="eye-icon">👁️</span>
+                  </button>
+                </div>
               </div>
 
               <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 700; font-size: 0.9375rem;">
@@ -272,21 +414,14 @@
               </button>
             </form>
 
-            <!-- Quick Demo Accounts -->
-            <div style="margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); text-align: center;">
-              <p style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-subtle); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
-                Masuk Cepat Demo:
+            <!-- Demo Credentials Hint -->
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); text-align: center;">
+              <p style="font-size: 0.75rem; font-weight: 600; color: var(--color-text-subtle); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">
+                Akun Terdaftar:
               </p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-admin" style="font-weight: 600;">
-                  👤 Akun Admin
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-kasir" style="font-weight: 600;">
-                  ☕ Akun Kasir
-                </button>
-              </div>
-              <div style="font-size: 0.75rem; color: var(--color-text-subtle); margin-top: 0.65rem;">
-                Admin: <code>admin123</code> | Kasir: <code>kasir123</code>
+              <div style="font-size: 0.75rem; color: var(--color-text-subtle); line-height: 1.6;">
+                Admin: <code>admin</code> (pass: <code>admin123</code>)<br>
+                Kasir: <code>kasir</code> (pass: <code>kasir123</code>)
               </div>
             </div>
           </div>
@@ -295,18 +430,21 @@
     `;
 
     document.getElementById('login-form').addEventListener('submit', handleLogin);
-    
-    document.getElementById('btn-quick-admin').addEventListener('click', () => {
-      document.getElementById('login-username').value = 'admin';
-      document.getElementById('login-password').value = 'admin123';
-      document.getElementById('btn-login-submit').click();
-    });
 
-    document.getElementById('btn-quick-kasir').addEventListener('click', () => {
-      document.getElementById('login-username').value = 'kasir';
-      document.getElementById('login-password').value = 'kasir123';
-      document.getElementById('btn-login-submit').click();
-    });
+    const toggleBtn = document.getElementById('btn-toggle-password');
+    const pwdInput = document.getElementById('login-password');
+    const eyeIcon = document.getElementById('eye-icon');
+    if (toggleBtn && pwdInput) {
+      toggleBtn.addEventListener('click', () => {
+        if (pwdInput.type === 'password') {
+          pwdInput.type = 'text';
+          if (eyeIcon) eyeIcon.textContent = '🙈';
+        } else {
+          pwdInput.type = 'password';
+          if (eyeIcon) eyeIcon.textContent = '👁️';
+        }
+      });
+    }
   }
 
   // ==========================================
@@ -324,32 +462,48 @@
     let navItems = '';
     if (isAdmin) {
       navItems = `
-        <div class="nav-section-title">Menu Utama</div>
+        <div class="nav-section-title">Menu Administrator</div>
         <div class="nav-item ${state.activeView === 'dashboard' ? 'active' : ''}" data-nav="dashboard">
           <span class="nav-icon">📊</span>
-          <span>Dashboard</span>
+          <span>Dashboard & Analytics</span>
         </div>
         <div class="nav-item ${state.activeView === 'pos' ? 'active' : ''}" data-nav="pos">
           <span class="nav-icon">☕</span>
           <span>Kasir (POS)</span>
         </div>
+        <div class="nav-item ${state.activeView === 'digital_menu' ? 'active' : ''}" data-nav="digital_menu">
+          <span class="nav-icon">📖</span>
+          <span>Buku Menu Digital</span>
+        </div>
         <div class="nav-item ${state.activeView === 'products' ? 'active' : ''}" data-nav="products">
+          <span class="nav-icon">✨</span>
+          <span>Manajemen Produk</span>
+        </div>
+        <div class="nav-item ${state.activeView === 'categories' ? 'active' : ''}" data-nav="categories">
+          <span class="nav-icon">🏷️</span>
+          <span>Kategori Produk</span>
+        </div>
+        <div class="nav-item ${state.activeView === 'stocks' ? 'active' : ''}" data-nav="stocks">
           <span class="nav-icon">📦</span>
-          <span>Produk</span>
+          <span>Manajemen Stok</span>
+        </div>
+        <div class="nav-item ${state.activeView === 'mutations' ? 'active' : ''}" data-nav="mutations">
+          <span class="nav-icon">⚖️</span>
+          <span>Stok & Mutasi</span>
         </div>
         <div class="nav-item ${state.activeView === 'transactions' ? 'active' : ''}" data-nav="transactions">
           <span class="nav-icon">🧾</span>
-          <span>Transaksi</span>
+          <span>Riwayat Transaksi</span>
         </div>
         <div class="nav-item ${state.activeView === 'reports' ? 'active' : ''}" data-nav="reports">
           <span class="nav-icon">💰</span>
-          <span>Laporan</span>
+          <span>Laporan Penjualan</span>
         </div>
 
         <div class="nav-section-title">Konfigurasi</div>
         <div class="nav-item ${state.activeView === 'users' ? 'active' : ''}" data-nav="users">
           <span class="nav-icon">👥</span>
-          <span>Pengguna</span>
+          <span>Manajemen Pengguna</span>
         </div>
         <div class="nav-item ${state.activeView === 'settings' ? 'active' : ''}" data-nav="settings">
           <span class="nav-icon">⚙️</span>
@@ -358,14 +512,26 @@
       `;
     } else {
       navItems = `
-        <div class="nav-section-title">Operasional</div>
+        <div class="nav-section-title">Operasional Kasir</div>
         <div class="nav-item ${state.activeView === 'pos' ? 'active' : ''}" data-nav="pos">
           <span class="nav-icon">☕</span>
-          <span>Kasir</span>
+          <span>Kasir / Transaksi</span>
+        </div>
+        <div class="nav-item ${state.activeView === 'digital_menu' ? 'active' : ''}" data-nav="digital_menu">
+          <span class="nav-icon">📖</span>
+          <span>Buku Menu Digital</span>
         </div>
         <div class="nav-item ${state.activeView === 'transactions' ? 'active' : ''}" data-nav="transactions">
           <span class="nav-icon">🧾</span>
           <span>Riwayat Transaksi</span>
+        </div>
+        <div class="nav-item ${state.activeView === 'products_info' ? 'active' : ''}" data-nav="products_info">
+          <span class="nav-icon">📋</span>
+          <span>Informasi Produk</span>
+        </div>
+        <div class="nav-item ${state.activeView === 'profile' ? 'active' : ''}" data-nav="profile">
+          <span class="nav-icon">👤</span>
+          <span>Profil Pengguna</span>
         </div>
       `;
     }
@@ -417,9 +583,16 @@
             </div>
 
             <div class="top-bar-actions">
-              <div class="system-status">
-                <span class="status-dot"></span>
-                <span>Database Siap</span>
+              <div class="preview-role-bar">
+                <span class="preview-badge">⚡ MODE MOCK (TANPA DB)</span>
+                <div class="role-selector-pills">
+                  <button class="role-pill ${isAdmin ? 'active' : ''}" onclick="window.BrewApp.switchRole('admin')" title="Tampilan Admin Dashboard">
+                    👑 Mode Admin
+                  </button>
+                  <button class="role-pill ${!isAdmin ? 'active' : ''}" onclick="window.BrewApp.switchRole('kasir')" title="Tampilan Kasir POS">
+                    ☕ Mode Kasir
+                  </button>
+                </div>
               </div>
               <div class="live-clock" id="live-clock">--:--:--</div>
             </div>
@@ -1559,7 +1732,7 @@
         </div>
       `;
     }
-    // Tab 3: Status & Mutasi Stok
+    // Tab 3: Status & Mutasi Stok (Disempurnakan: Restock & Koreksi Sederhana)
     else if (activeTab === 'stocks') {
       const lowCount = stocks.filter(s => s.stock_status === 'low_stock').length;
       const outCount = stocks.filter(s => s.stock_status === 'out_of_stock').length;
@@ -1569,9 +1742,9 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: var(--color-primary-light); color: var(--color-primary);">📦</div>
             <div class="stat-info">
-              <div class="stat-label">Total SKU Terdaftar</div>
+              <div class="stat-label">Total Bahan & Menu</div>
               <div class="stat-value">${stocks.length}</div>
-              <div class="stat-subtext">Menu aktif di database</div>
+              <div class="stat-subtext">Item terdaftar di sistem</div>
             </div>
           </div>
 
@@ -1589,92 +1762,118 @@
             <div class="stat-info">
               <div class="stat-label">Stok Habis (Kosong)</div>
               <div class="stat-value" style="color: ${outCount > 0 ? '#C62828' : '#1B5E20'};">${outCount}</div>
-              <div class="stat-subtext">Tidak dapat dijual di kasir</div>
+              <div class="stat-subtext">Perlu restock segera</div>
             </div>
           </div>
         </div>
 
+        <!-- Tabel Persediaan Stok Bahan -->
         <div class="card" style="margin-bottom: 1.75rem;">
-          <div class="card-header">
-            <h3 class="card-title">Daftar Stok Produk Saat Ini</h3>
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h3 class="card-title">Daftar Stok Bahan & Menu</h3>
+              <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.2rem;">Persediaan yang tercatat di sistem secara real-time</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="btn btn-primary btn-sm" onclick="window.BrewApp.openRestockModal()">
+                ➕ Restock Masuk
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="window.BrewApp.openCorrectionModal()">
+                ⚖️ Koreksi Fisik
+              </button>
+            </div>
           </div>
+
           <div class="table-responsive">
             <table class="modern-table">
               <thead>
                 <tr>
-                  <th>Nama Produk</th>
+                  <th>Nama Bahan / Menu</th>
                   <th>Kategori</th>
-                  <th>Stok Tersedia</th>
-                  <th>Batas Minimum</th>
-                  <th>Status</th>
-                  <th style="text-align: right;">Aksi</th>
+                  <th style="text-align: center;">Stok Sistem</th>
+                  <th style="text-align: center;">Batas Minimum</th>
+                  <th style="text-align: center;">Status</th>
+                  <th style="text-align: right;">Aksi Cepat</th>
                 </tr>
               </thead>
               <tbody>
-                ${stocks.map(s => {
-                  let badge = '<span class="status-badge badge-success">Tersedia Aman</span>';
-                  if (s.stock_status === 'out_of_stock') badge = '<span class="status-badge badge-danger">Habis</span>';
-                  else if (s.stock_status === 'low_stock') badge = '<span class="status-badge badge-warning">Stok Menipis</span>';
+                ${stocks.length === 0 ? '<tr><td colspan="6" style="text-align:center; padding:2rem; color: var(--color-text-muted);">Belum ada produk atau bahan terdaftar.</td></tr>' :
+                  stocks.map(s => {
+                    let badge = '<span class="status-badge badge-success">Aman</span>';
+                    if (s.stock_status === 'out_of_stock') badge = '<span class="status-badge badge-danger">Habis</span>';
+                    else if (s.stock_status === 'low_stock') badge = '<span class="status-badge badge-warning">Menipis</span>';
 
-                  return `
-                    <tr>
-                      <td style="font-weight: 700; color: var(--color-text);">${escapeHtml(s.name)}</td>
-                      <td><span class="status-badge badge-neutral">${escapeHtml(s.category_name)}</span></td>
-                      <td style="font-size: 1.05rem; font-weight: 800; color: ${s.stock <= s.min_stock ? '#B78103' : 'inherit'};">${s.stock}</td>
-                      <td style="color: var(--color-text-muted);">${s.min_stock} unit</td>
-                      <td>${badge}</td>
-                      <td style="text-align: right;">
-                        <button class="btn btn-secondary btn-sm" onclick="window.BrewApp.openAdjustStockModal(${s.id}, '${escapeHtml(s.name)}', ${s.stock})">
-                          ➕ Restock / Sesuaikan
-                        </button>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
+                    return `
+                      <tr>
+                        <td style="font-weight: 700; color: var(--color-text);">${escapeHtml(s.name)}</td>
+                        <td><span class="status-badge badge-neutral">${escapeHtml(s.category_name)}</span></td>
+                        <td style="font-size: 1.05rem; font-weight: 800; text-align: center; color: ${s.stock <= s.min_stock ? '#B78103' : 'inherit'};">${s.stock} unit</td>
+                        <td style="color: var(--color-text-muted); text-align: center;">${s.min_stock} unit</td>
+                        <td style="text-align: center;">${badge}</td>
+                        <td style="text-align: right;">
+                          <div style="display: inline-flex; gap: 0.35rem;">
+                            <button class="btn btn-primary btn-sm" onclick="window.BrewApp.openRestockModal(${s.id})" title="Tambah stok masuk">
+                              ➕ Restock
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="window.BrewApp.openCorrectionModal(${s.id})" title="Sesuaikan dengan hitung fisik nyata">
+                              ⚖️ Koreksi
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')
+                }
               </tbody>
             </table>
           </div>
         </div>
 
+        <!-- Tabel Riwayat Mutasi Stok (Terpadu) -->
         <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Riwayat Mutasi Stok (Audit Trail Otomatis)</h3>
-            <span style="font-size: 0.75rem; color: var(--color-text-muted);">Mencatat penjualan kasir, restock, penyesuaian, dan pembatalan void</span>
+          <div class="card-header" style="flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 class="card-title">Riwayat Mutasi Stok (Audit Log Terpadu)</h3>
+              <span style="font-size: 0.75rem; color: var(--color-text-muted);">Mencatat seluruh Restock, Koreksi Fisik, dan Pengurangan Penjualan secara otomatis</span>
+            </div>
           </div>
           <div class="table-responsive">
             <table class="modern-table">
               <thead>
                 <tr>
-                  <th>Waktu</th>
-                  <th>Nama Produk</th>
-                  <th>Tipe Mutasi</th>
-                  <th>Perubahan</th>
-                  <th>Sebelum ➔ Sesudah</th>
-                  <th>Keterangan / Ref</th>
-                  <th>Operator</th>
+                  <th>Tanggal & Waktu</th>
+                  <th>Nama Bahan / Menu</th>
+                  <th>Jenis Aktivitas</th>
+                  <th style="text-align: center;">Perubahan</th>
+                  <th style="text-align: center;">Sebelum ➔ Sesudah</th>
+                  <th>Keterangan / Alasan</th>
+                  <th style="text-align: right;">Operator</th>
                 </tr>
               </thead>
               <tbody>
-                ${history.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding:1.75rem; color: var(--color-text-muted);">Belum ada riwayat mutasi stok.</td></tr>' :
-                  history.slice(0, 30).map(h => {
+                ${history.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding:2rem; color: var(--color-text-muted);">Belum ada riwayat mutasi stok.</td></tr>' :
+                  history.slice(0, 50).map(h => {
                     const isPositive = h.quantity_change > 0;
                     let typeBadge = '<span class="status-badge badge-neutral">Penyesuaian</span>';
-                    if (h.change_type === 'sale') typeBadge = '<span class="status-badge badge-warning">Penjualan Kasir</span>';
-                    else if (h.change_type === 'restock') typeBadge = '<span class="status-badge badge-success">Restock Supplier</span>';
-                    else if (h.change_type === 'initial') typeBadge = '<span class="status-badge badge-neutral">Stok Awal</span>';
-                    else if (h.change_type === 'cancellation') typeBadge = '<span class="status-badge badge-success">Pengembalian Void</span>';
+                    if (h.change_type === 'sale') typeBadge = '<span class="status-badge" style="background:#E8F4FD; color:#0D47A1; border:1px solid #BBDEFB;">🛒 Penjualan Kasir</span>';
+                    else if (h.change_type === 'restock') typeBadge = '<span class="status-badge badge-success">🟢 Restock Masuk</span>';
+                    else if (h.change_type === 'adjustment') typeBadge = '<span class="status-badge badge-warning">⚖️ Koreksi Fisik</span>';
+                    else if (h.change_type === 'initial') typeBadge = '<span class="status-badge badge-neutral">📦 Stok Awal</span>';
+                    else if (h.change_type === 'cancellation') typeBadge = '<span class="status-badge" style="background:#F3E8FF; color:#6B21A8; border:1px solid #E9D5FF;">↩️ Void Transaksi</span>';
 
                     return `
                       <tr>
-                        <td style="font-size: 0.8125rem; color: var(--color-text-muted);">${formatDateTime(h.created_at)}</td>
-                        <td style="font-weight: 600;">${escapeHtml(h.product_name)}</td>
+                        <td style="font-size: 0.8125rem; color: var(--color-text-muted); font-family: var(--font-mono);">${formatDateTime(h.created_at)}</td>
+                        <td style="font-weight: 700; color: var(--color-text);">${escapeHtml(h.product_name)}</td>
                         <td>${typeBadge}</td>
-                        <td style="font-weight: 800; color: ${isPositive ? 'var(--status-success-text)' : 'var(--status-danger-text)'};">
+                        <td style="font-weight: 800; font-size: 0.9375rem; text-align: center; color: ${isPositive ? 'var(--status-success-text)' : 'var(--status-danger-text)'};">
                           ${isPositive ? '+' : ''}${h.quantity_change}
                         </td>
-                        <td>${h.previous_stock} ➔ <strong>${h.current_stock}</strong></td>
+                        <td style="font-size: 0.8125rem; text-align: center; font-family: var(--font-mono); color: var(--color-text-muted);">
+                          ${h.previous_stock} ➔ <strong style="color: var(--color-text);">${h.current_stock}</strong>
+                        </td>
                         <td style="font-size: 0.8125rem; color: var(--color-text-muted);">${escapeHtml(h.notes || h.reference_id || '-')}</td>
-                        <td>${escapeHtml(h.created_by)}</td>
+                        <td style="text-align: right; font-weight: 600; font-size: 0.8125rem;">${escapeHtml(h.created_by)}</td>
                       </tr>
                     `;
                   }).join('')
@@ -1966,95 +2165,298 @@
     }
   }
 
-  // Stock Adjustment / Restock Modal
-  function openAdjustStockModal(productId, productName, currentStock) {
+  // ==========================================
+  // MODAL 1: RESTOCK STOK MASUK (Khusus Tambah Bahan Masuk)
+  // ==========================================
+  async function openRestockModal(productId = null) {
+    const res = await api('/api/admin/stocks');
+    if (!res || !res.stocks) return;
+
+    const stocks = res.stocks;
+    let selectedProd = productId ? stocks.find(p => p.id === productId) : stocks[0];
+    let selectedId = selectedProd ? selectedProd.id : '';
+
     const modalHtml = `
-      <div class="modal-overlay open" id="adjust-stock-modal">
-        <div class="modal-dialog" style="max-width: 480px;">
-          <div class="modal-header">
-            <h3 class="modal-title">Sesuaikan Stok Produk</h3>
-            <button class="modal-close" onclick="document.getElementById('adjust-stock-modal').remove()">✕</button>
+      <div class="modal-overlay open" id="restock-modal">
+        <div class="modal-dialog" style="max-width: 460px;">
+          <div class="modal-header" style="background: var(--color-primary); color: #FFFFFF;">
+            <div>
+              <h3 class="modal-title" style="color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem;">
+                <span>➕</span> Restock Bahan Masuk
+              </h3>
+              <p style="font-size: 0.75rem; color: var(--color-secondary); margin-top: 0.15rem;">Tambah stok persediaan dari pengadaan atau supplier</p>
+            </div>
+            <button class="modal-close" style="color: #FFFFFF;" onclick="document.getElementById('restock-modal').remove()">✕</button>
           </div>
 
-          <form id="adjust-stock-form">
+          <form id="restock-form">
             <div class="modal-body">
-              <div style="background: var(--color-bg); padding: 0.85rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; border: 1px solid var(--color-border);">
-                <div style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 500;">Produk yang disesuaikan:</div>
-                <div style="font-weight: 700; font-size: 1rem; color: var(--color-text);">${escapeHtml(productName)}</div>
-                <div style="font-size: 0.8125rem; color: var(--color-primary); font-weight: 600; margin-top: 0.2rem;">
-                  Stok Saat Ini: ${currentStock} unit
+              <div class="form-group">
+                <label class="form-label">Pilih Bahan / Menu *</label>
+                <select id="form-restock-product" class="form-control" required>
+                  ${stocks.map(p => `
+                    <option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>
+                      ${escapeHtml(p.name)} (Stok: ${p.stock} unit)
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div id="restock-info-box" style="background: var(--color-bg); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-bottom: 1.15rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-size: 0.75rem; color: var(--color-text-muted);">Stok tercatat saat ini:</span>
+                  <div id="restock-current-stock" style="font-weight: 700; font-size: 1.05rem; color: var(--color-text);">
+                    ${selectedProd ? selectedProd.stock : 0} unit
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 0.75rem; color: var(--status-success-text); font-weight: 600;">Estimasi stok akhir:</span>
+                  <div id="restock-future-stock" style="font-weight: 800; font-size: 1.05rem; color: var(--status-success-text);">
+                    ${selectedProd ? selectedProd.stock + 10 : 10} unit
+                  </div>
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Jenis Penyesuaian *</label>
-                <select id="form-stock-type" class="form-control">
-                  <option value="restock">➕ Restock Pengadaan Baru (Tambah)</option>
-                  <option value="adjustment-subtract">➖ Pengurangan Rusak / Basi / Kadaluarsa</option>
-                  <option value="adjustment-add">➕ Koreksi Selisih Opname (Tambah)</option>
-                </select>
+                <label class="form-label">Jumlah Stok Masuk (+) *</label>
+                <input type="number" id="form-restock-qty" class="form-control" min="1" value="10" required style="font-weight: 700; font-size: 1rem;">
+                <div class="form-hint">Jumlah unit yang diterima dan langsung ditambahkan ke gudang.</div>
               </div>
 
               <div class="form-group">
-                <label class="form-label">Jumlah Unit *</label>
-                <input type="number" id="form-stock-qty" class="form-control" min="1" value="10" required>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Catatan / Referensi</label>
-                <input type="text" id="form-stock-notes" class="form-control" placeholder="Contoh: Pengiriman supplier Roastery #42">
+                <label class="form-label">Catatan / Supplier (Opsional)</label>
+                <input type="text" id="form-restock-notes" class="form-control" placeholder="Contoh: Kiriman Roastery Batch #42 / No. PO-102">
               </div>
             </div>
 
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" onclick="document.getElementById('adjust-stock-modal').remove()">Batal</button>
-              <button type="submit" class="btn btn-primary">Simpan Mutasi Stok</button>
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('restock-modal').remove()">Batal</button>
+              <button type="submit" class="btn btn-primary" id="btn-submit-restock">
+                💾 Simpan Restock
+              </button>
             </div>
           </form>
         </div>
       </div>
     `;
 
-    const existing = document.getElementById('adjust-stock-modal');
+    const existing = document.getElementById('restock-modal');
     if (existing) existing.remove();
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    document.getElementById('adjust-stock-form').addEventListener('submit', async (e) => {
+    // Live preview update
+    const productSelect = document.getElementById('form-restock-product');
+    const qtyInput = document.getElementById('form-restock-qty');
+    const currentStockEl = document.getElementById('restock-current-stock');
+    const futureStockEl = document.getElementById('restock-future-stock');
+
+    function updateRestockPreview() {
+      const prodId = parseInt(productSelect.value, 10);
+      const prod = stocks.find(p => p.id === prodId);
+      const qty = parseInt(qtyInput.value || '0', 10);
+      if (prod) {
+        currentStockEl.textContent = `${prod.stock} unit`;
+        futureStockEl.textContent = `${prod.stock + Math.max(0, qty)} unit`;
+      }
+    }
+
+    productSelect.addEventListener('change', updateRestockPreview);
+    qtyInput.addEventListener('input', updateRestockPreview);
+
+    document.getElementById('restock-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const typeVal = document.getElementById('form-stock-type').value;
-      const qty = parseInt(document.getElementById('form-stock-qty').value, 10);
-      const notes = document.getElementById('form-stock-notes').value.trim();
+      const prodId = parseInt(productSelect.value, 10);
+      const qty = parseInt(qtyInput.value, 10);
+      const notes = document.getElementById('form-restock-notes').value.trim();
 
-      let changeType = 'restock';
-      let direction = 'add';
-
-      if (typeVal === 'adjustment-subtract') {
-        changeType = 'adjustment';
-        direction = 'subtract';
-      } else if (typeVal === 'adjustment-add') {
-        changeType = 'adjustment';
-        direction = 'add';
+      if (!prodId || !qty || qty <= 0) {
+        showToast('Jumlah stok masuk harus lebih dari 0 unit.', 'warning');
+        return;
       }
 
-      const payload = {
-        productId,
-        changeType,
-        quantity: qty,
-        direction,
-        notes: notes || (typeVal === 'restock' ? 'Restock produk' : 'Penyesuaian stok manual')
-      };
+      const submitBtn = document.getElementById('btn-submit-restock');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Menyimpan...';
 
       const res = await api('/api/admin/stocks/adjust', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          productId: prodId,
+          changeType: 'restock',
+          quantity: qty,
+          notes: notes || 'Restock bahan masuk'
+        })
       });
 
       if (res && res.success) {
         showToast(res.message, 'success');
-        document.getElementById('adjust-stock-modal').remove();
+        document.getElementById('restock-modal').remove();
         renderProductsView();
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '💾 Simpan Restock';
       }
     });
+  }
+
+  // ==========================================
+  // MODAL 2: KOREKSI STOK FISIK (Hitung Selisih Otomatis)
+  // ==========================================
+  async function openCorrectionModal(productId = null) {
+    const res = await api('/api/admin/stocks');
+    if (!res || !res.stocks) return;
+
+    const stocks = res.stocks;
+    let selectedProd = productId ? stocks.find(p => p.id === productId) : stocks[0];
+    let selectedId = selectedProd ? selectedProd.id : '';
+
+    const modalHtml = `
+      <div class="modal-overlay open" id="correction-modal">
+        <div class="modal-dialog" style="max-width: 460px;">
+          <div class="modal-header" style="background: #282522; color: #FFFFFF;">
+            <div>
+              <h3 class="modal-title" style="color: #FFFFFF; display: flex; align-items: center; gap: 0.5rem;">
+                <span>⚖️</span> Koreksi Stok Fisik (Opname)
+              </h3>
+              <p style="font-size: 0.75rem; color: #DED5C8; margin-top: 0.15rem;">Sesuaikan stok sistem dengan hasil hitung fisik nyata</p>
+            </div>
+            <button class="modal-close" style="color: #FFFFFF;" onclick="document.getElementById('correction-modal').remove()">✕</button>
+          </div>
+
+          <form id="correction-form">
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="form-label">Pilih Bahan / Menu *</label>
+                <select id="form-corr-product" class="form-control" required>
+                  ${stocks.map(p => `
+                    <option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>
+                      ${escapeHtml(p.name)} (Stok sistem: ${p.stock} unit)
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div style="background: var(--color-bg); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-bottom: 1.15rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <span style="font-size: 0.75rem; color: var(--color-text-muted);">Stok tercatat di sistem:</span>
+                  <span id="corr-current-stock" style="font-weight: 700; font-size: 1rem; color: var(--color-text);">
+                    ${selectedProd ? selectedProd.stock : 0} unit
+                  </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--color-border); padding-top: 0.4rem;">
+                  <span style="font-size: 0.75rem; color: var(--color-text-muted);">Selisih penyesuaian:</span>
+                  <span id="corr-diff-badge" style="font-weight: 700; font-size: 0.8125rem;">
+                    0 unit (Stok Sama)
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Jumlah Stok Fisik Sebenarnya *</label>
+                <input type="number" id="form-corr-actual" class="form-control" min="0" value="${selectedProd ? selectedProd.stock : 0}" required style="font-weight: 700; font-size: 1rem;">
+                <div class="form-hint">Masukkan angka hasil opname fisik. Sistem otomatis menghitung selisihnya.</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Alasan Koreksi Fisik *</label>
+                <input type="text" id="form-corr-reason" class="form-control" placeholder="Contoh: Barang tumpah / Selisih opname fisik mingguan" required>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('correction-modal').remove()">Batal</button>
+              <button type="submit" class="btn btn-primary" id="btn-submit-corr" style="background: #282522; border-color: #282522;">
+                ⚖️ Simpan Koreksi Fisik
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    const existing = document.getElementById('correction-modal');
+    if (existing) existing.remove();
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const productSelect = document.getElementById('form-corr-product');
+    const actualInput = document.getElementById('form-corr-actual');
+    const currentStockEl = document.getElementById('corr-current-stock');
+    const diffBadgeEl = document.getElementById('corr-diff-badge');
+
+    function updateCorrectionPreview() {
+      const prodId = parseInt(productSelect.value, 10);
+      const prod = stocks.find(p => p.id === prodId);
+      const actual = parseInt(actualInput.value || '0', 10);
+
+      if (prod) {
+        currentStockEl.textContent = `${prod.stock} unit`;
+        const diff = actual - prod.stock;
+        if (diff > 0) {
+          diffBadgeEl.textContent = `+${diff} unit (Stok Bertambah)`;
+          diffBadgeEl.style.color = 'var(--status-success-text)';
+        } else if (diff < 0) {
+          diffBadgeEl.textContent = `${diff} unit (Stok Berkurang)`;
+          diffBadgeEl.style.color = 'var(--status-danger-text)';
+        } else {
+          diffBadgeEl.textContent = '0 unit (Stok Sama)';
+          diffBadgeEl.style.color = 'var(--color-text-muted)';
+        }
+      }
+    }
+
+    productSelect.addEventListener('change', () => {
+      const prodId = parseInt(productSelect.value, 10);
+      const prod = stocks.find(p => p.id === prodId);
+      if (prod) actualInput.value = prod.stock;
+      updateCorrectionPreview();
+    });
+
+    actualInput.addEventListener('input', updateCorrectionPreview);
+    updateCorrectionPreview();
+
+    document.getElementById('correction-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prodId = parseInt(productSelect.value, 10);
+      const actual = parseInt(actualInput.value, 10);
+      const reason = document.getElementById('form-corr-reason').value.trim();
+
+      if (isNaN(actual) || actual < 0) {
+        showToast('Jumlah stok fisik tidak boleh bernilai negatif.', 'error');
+        return;
+      }
+      if (!reason) {
+        showToast('Alasan koreksi fisik wajib diisi.', 'warning');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btn-submit-corr');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Menyimpan...';
+
+      const res = await api('/api/admin/stocks/adjust', {
+        method: 'POST',
+        body: JSON.stringify({
+          productId: prodId,
+          changeType: 'adjustment',
+          actualStock: actual,
+          notes: `Koreksi Fisik (Opname): ${reason}`
+        })
+      });
+
+      if (res && res.success) {
+        showToast(res.message, 'success');
+        document.getElementById('correction-modal').remove();
+        renderProductsView();
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '⚖️ Simpan Koreksi Fisik';
+      }
+    });
+  }
+
+  // Wrapper for backwards compatibility
+  function openAdjustStockModal(productId) {
+    openRestockModal(productId);
   }
 
   // ==========================================
@@ -2687,6 +3089,609 @@
   }
 
   // ==========================================
+  // VIEW 11: INFORMASI PRODUK (KASIR READ-ONLY)
+  // ==========================================
+  async function renderProductsInfoView() {
+    renderShell('<div style="text-align:center; padding: 3rem; color: var(--color-text-muted);">Memuat informasi produk...</div>', 'Informasi Menu & Stok', 'Katalog Baca-Saja: Periksa harga menu dan ketersediaan stok fisik');
+
+    const res = await api('/api/pos/products');
+    if (!res || !res.success) return;
+
+    const products = res.products || [];
+    const categories = res.categories || [];
+
+    const totalMenu = products.length;
+    const safeStock = products.filter(p => p.stock > (p.min_stock || 5)).length;
+    const lowStock = products.filter(p => p.stock > 0 && p.stock <= (p.min_stock || 5)).length;
+    const outStock = products.filter(p => p.stock <= 0).length;
+
+    let filtered = products;
+    if (state.productsInfoCat && state.productsInfoCat !== 'all') {
+      filtered = filtered.filter(p => String(p.category_id) === String(state.productsInfoCat));
+    }
+    if (state.productsInfoSearch && state.productsInfoSearch.trim()) {
+      const q = state.productsInfoSearch.toLowerCase().trim();
+      filtered = filtered.filter(p => 
+        (p.name || '').toLowerCase().includes(q) || 
+        (p.category_name || '').toLowerCase().includes(q) ||
+        (p.description || '').toLowerCase().includes(q)
+      );
+    }
+
+    const contentHtml = `
+      <div style="margin-bottom: 1.25rem; background: #FFF8E1; border: 1px solid #FFE082; padding: 0.85rem 1.15rem; border-radius: var(--radius-md); display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.2rem;">ℹ️</span>
+        <div style="font-size: 0.8125rem; color: #6D4C41; line-height: 1.4;">
+          <strong>Mode Informasi Kasir (Katalog Baca-Saja):</strong> Halaman ini difokuskan untuk memudahkan kasir mengecek harga menu dan ketersediaan stok fisik saat melayani pelanggan tanpa tombol ubah harga/stok.
+        </div>
+      </div>
+
+      <!-- KPI Summary -->
+      <div class="stats-grid" style="margin-bottom: 1.5rem;">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: var(--color-primary-light); color: var(--color-primary);">☕</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Menu</div>
+            <div class="stat-value">${totalMenu} Item</div>
+            <div class="stat-subtext">Menu terdaftar di kedai</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #E8F8F5; color: #1B5E20;">✅</div>
+          <div class="stat-info">
+            <div class="stat-label">Stok Aman</div>
+            <div class="stat-value" style="color: #1B5E20;">${safeStock} Item</div>
+            <div class="stat-subtext">Siap untuk dipesan</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #FFF9E6; color: #B78103;">⚠️</div>
+          <div class="stat-info">
+            <div class="stat-label">Stok Menipis</div>
+            <div class="stat-value" style="color: #B78103;">${lowStock} Item</div>
+            <div class="stat-subtext">Perlu diperhatikan</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #FDEDEC; color: #C62828;">⛔</div>
+          <div class="stat-info">
+            <div class="stat-label">Stok Habis</div>
+            <div class="stat-value" style="color: #C62828;">${outStock} Item</div>
+            <div class="stat-subtext">Tidak dapat dijual</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="table-toolbar" style="margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="flex: 1; min-width: 240px; max-width: 340px;">
+          <input type="text" id="info-search-input" class="form-control" placeholder="Cari nama menu / rasa..." value="${escapeHtml(state.productsInfoSearch || '')}">
+        </div>
+
+        <div style="display: flex; gap: 0.4rem; overflow-x: auto; flex-wrap: wrap;">
+          <button class="btn btn-sm ${!state.productsInfoCat || state.productsInfoCat === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="window.BrewApp.setInfoCategory('all')">
+            Semua
+          </button>
+          ${categories.map(c => `
+            <button class="btn btn-sm ${state.productsInfoCat === String(c.id) ? 'btn-primary' : 'btn-secondary'}" onclick="window.BrewApp.setInfoCategory('${c.id}')">
+              ${escapeHtml(c.name)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      ${filtered.length === 0 ? `
+        <div class="card" style="text-align: center; padding: 3rem 1rem;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+          <h4 style="color: var(--color-text); margin-bottom: 0.25rem;">Tidak ada menu ditemukan</h4>
+          <p style="color: var(--color-text-muted); font-size: 0.8125rem;">Coba gunakan kata kunci pencarian atau kategori lain.</p>
+        </div>
+      ` : `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem;">
+          ${filtered.map(p => {
+            const isOutOfStock = p.stock <= 0;
+            const isLow = !isOutOfStock && p.stock <= (p.min_stock || 5);
+            let badge = `<span class="status-badge badge-success">${p.stock} Unit Tersedia</span>`;
+            if (isOutOfStock) badge = `<span class="status-badge badge-danger">Stok Habis</span>`;
+            else if (isLow) badge = `<span class="status-badge badge-warning">Sisa ${p.stock} Unit</span>`;
+
+            return `
+              <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; border: 1px solid var(--color-border); transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                <div style="background: var(--color-bg); padding: 1.25rem; text-align: center; position: relative; border-bottom: 1px solid var(--color-border-subtle);">
+                  <span style="position: absolute; top: 0.65rem; left: 0.65rem; font-size: 0.7rem; font-weight: 700; background: #FFFFFF; padding: 0.15rem 0.5rem; border-radius: 999px; border: 1px solid var(--color-border); color: var(--color-text);">
+                    ${escapeHtml(p.category_name || 'Menu')}
+                  </span>
+                  <div style="font-size: 3rem; margin: 0.5rem 0;">☕</div>
+                  <div style="position: absolute; top: 0.65rem; right: 0.65rem;">
+                    ${badge}
+                  </div>
+                </div>
+
+                <div style="padding: 1rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <h4 style="font-weight: 700; font-size: 0.9375rem; color: var(--color-text); margin-bottom: 0.25rem;">${escapeHtml(p.name)}</h4>
+                    <p style="font-size: 0.75rem; color: var(--color-text-muted); line-height: 1.4; margin-bottom: 0.75rem;">${escapeHtml(p.description || 'Menu racikan barista segar khas BREWSPACE.')}</p>
+                  </div>
+
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid var(--color-border-subtle);">
+                    <div>
+                      <span style="font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: var(--color-text-subtle); display: block;">Harga Satuan</span>
+                      <strong style="font-size: 1.05rem; color: var(--color-primary); font-family: monospace;">${formatRupiah(p.price)}</strong>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="window.BrewApp.orderInPos(${p.id})" ${isOutOfStock ? 'disabled' : ''} style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                      ${isOutOfStock ? 'Habis' : 'Pesan di POS ➔'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `}
+    `;
+
+    renderShell(contentHtml, 'Informasi Menu & Stok', 'Katalog Baca-Saja: Periksa harga menu dan ketersediaan stok fisik');
+
+    const searchInput = document.getElementById('info-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        state.productsInfoSearch = e.target.value;
+        renderProductsInfoView();
+      });
+    }
+  }
+
+  // ==========================================
+  // VIEW 12: PROFIL PENGGUNA & SHIFT
+  // ==========================================
+  async function renderProfileView() {
+    renderShell('<div style="text-align:center; padding: 3rem; color: var(--color-text-muted);">Memuat profil pengguna...</div>', 'Profil Pengguna & Shift', 'Informasi akun staf, sesi operasional, dan keamanan');
+
+    const u = state.user;
+    const resTrx = await api('/api/pos/transactions');
+    const transactions = (resTrx && resTrx.transactions) ? resTrx.transactions : [];
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayTrx = transactions.filter(t => t.created_at && t.created_at.startsWith(todayStr));
+
+    const contentHtml = `
+      <div style="max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Profile Card -->
+        <div class="card" style="display: flex; gap: 1.5rem; align-items: center; padding: 1.75rem;">
+          <div style="width: 80px; height: 80px; border-radius: var(--radius-md); background: var(--color-primary); color: #FFFFFF; font-size: 2.2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md);">
+            ${(u?.fullName || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--color-text); margin-bottom: 0.2rem;">${escapeHtml(u?.fullName || 'Staf Kasir')}</h3>
+                <p style="font-size: 0.8125rem; color: var(--color-text-muted); font-family: monospace;">@${escapeHtml(u?.username || 'user')} • ID Akun #${u?.id || 1}</p>
+              </div>
+              <span class="user-role-badge ${u?.role === 'admin' ? 'badge-admin' : 'badge-kasir'}">
+                ${u?.role === 'admin' ? 'Administrator' : 'Kasir / Staff POS'}
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border-subtle);">
+              <div style="font-size: 0.75rem;">
+                <span style="color: var(--color-text-muted); display: block;">Status Sesi Login:</span>
+                <strong style="color: #1B5E20; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.15rem;">
+                  <span class="status-dot"></span> Aktif & Terotentikasi
+                </strong>
+              </div>
+              <div style="font-size: 0.75rem;">
+                <span style="color: var(--color-text-muted); display: block;">Sistem Toko:</span>
+                <strong style="color: var(--color-text); margin-top: 0.15rem; display: block;">BREWSPACE Coffee v2.0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shift & Performance Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+          <!-- Shift Overview -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Aktivitas Shift Anda Hari Ini</h3>
+            </div>
+            <div style="padding: 0.5rem 0 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="background: var(--color-bg); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8125rem; color: var(--color-text-muted);">Transaksi Selesai Hari Ini:</span>
+                <strong style="font-size: 1.15rem; color: var(--color-primary); font-family: monospace;">${todayTrx.length} Pesanan</strong>
+              </div>
+              <div style="background: var(--color-bg); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8125rem; color: var(--color-text-muted);">Total Pesanan Riwayat Akun:</span>
+                <strong style="font-size: 1.15rem; color: var(--color-text); font-family: monospace;">${transactions.length} Pesanan</strong>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-primary btn-sm" onclick="window.BrewApp.navigateTo('pos')" style="flex: 1;">
+                ☕ Buka Kasir (POS)
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="window.BrewApp.navigateTo('transactions')">
+                🧾 Riwayat Transaksi
+              </button>
+            </div>
+          </div>
+
+          <!-- Hak Akses Role -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Ketentuan Hak Akses Peran</h3>
+            </div>
+            <div style="font-size: 0.8125rem; line-height: 1.5; color: var(--color-text-muted); display: flex; flex-direction: column; gap: 0.6rem; padding: 0.5rem 0 1rem;">
+              <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                <span style="color: #1B5E20; font-weight: 800;">✓</span>
+                <span>Memproses pesanan pelanggan, pembayaran tunai & non-tunai (QRIS).</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                <span style="color: #1B5E20; font-weight: 800;">✓</span>
+                <span>Mencetak & mengunduh struk bukti transaksi.</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                <span style="color: #1B5E20; font-weight: 800;">✓</span>
+                <span>Mengecek katalog harga & ketersediaan stok fisik menu.</span>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 0.5rem; background: #FFF9E6; padding: 0.5rem 0.65rem; border-radius: var(--radius-sm); border: 1px solid #FFE082; color: #8D6E63;">
+                <span>⚠️</span>
+                <span>Kasir tidak diizinkan mengubah harga, mengedit stok manual, atau membuka laporan omzet toko.</span>
+              </div>
+            </div>
+
+            <button class="btn btn-secondary btn-sm" id="btn-profile-logout" style="width: 100%; border-color: #EF9A9A; color: #C62828;">
+              🚪 Akhiri Shift & Keluar (Logout)
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    renderShell(contentHtml, 'Profil Pengguna & Shift', 'Informasi akun staf, sesi operasional, dan keamanan');
+
+    document.getElementById('btn-profile-logout').addEventListener('click', () => {
+      if (confirm('Apakah Anda yakin ingin mengakhiri shift dan keluar dari sistem?')) {
+        logout();
+      }
+    });
+  }
+
+  // ==========================================
+  // VIEW 13: BUKU MENU DIGITAL (VIEW-ONLY MENU)
+  // ==========================================
+  async function renderDigitalMenuView() {
+    renderShell('<div style="text-align:center; padding: 3rem; color: var(--color-text-muted);">Memuat katalog menu digital...</div>', 'Buku Menu Digital (Digital Menu)', 'Tampilan resmi katalog menu kedai untuk pelanggan (View-Only)');
+
+    const res = await api('/api/menu');
+    const products = (res && res.products) || [];
+    const categories = (res && res.categories) || [];
+
+    const activeCat = state.menuActiveCat || 'all';
+    const query = (state.menuSearchQuery || '').toLowerCase().trim();
+
+    const filtered = products.filter(p => {
+      const matchCat = activeCat === 'all' || p.category_slug === activeCat;
+      const matchSearch = !query || p.name.toLowerCase().includes(query) || (p.description && p.description.toLowerCase().includes(query));
+      return matchCat && matchSearch;
+    });
+
+    const catPills = `
+      <button class="btn btn-sm ${activeCat === 'all' ? 'btn-primary' : 'btn-secondary'} btn-menu-cat" data-cat="all">Semua Menu (${products.length})</button>
+      ${categories.map(c => `
+        <button class="btn btn-sm ${activeCat === c.slug ? 'btn-primary' : 'btn-secondary'} btn-menu-cat" data-cat="${c.slug}">${escapeHtml(c.name)}</button>
+      `).join('')}
+    `;
+
+    const cards = filtered.map(p => {
+      const isAvailable = p.stock > 0;
+      const imgSrc = (window.CoffeeImages && window.CoffeeImages.getImage) 
+        ? window.CoffeeImages.getImage(p.image_url, p.name, p.category_slug)
+        : '/favicon.ico';
+
+      return `
+        <div style="background:var(--color-card); border-radius:var(--radius-md); border:1px solid var(--color-border); overflow:hidden; display:flex; flex-direction:column; box-shadow:var(--shadow-xs);">
+          <div style="position:relative; aspect-ratio:16/10; background:var(--color-bg); overflow:hidden;">
+            <img src="${imgSrc}" alt="${escapeHtml(p.name)}" style="width:100%; height:100%; object-fit:cover;" />
+            <div style="position:absolute; top:8px; left:8px; background:rgba(255,255,255,0.9); padding:2px 8px; border-radius:12px; font-size:0.6875rem; font-weight:700; color:var(--color-primary);">
+              ${escapeHtml(p.category_name || '')}
+            </div>
+            <div style="position:absolute; top:8px; right:8px;">
+              ${isAvailable 
+                ? '<span style="background:#E8F5E9; color:#2E7D32; border:1px solid #A5D6A7; font-size:0.6875rem; font-weight:700; padding:2px 8px; border-radius:12px;">● Tersedia</span>' 
+                : '<span style="background:#FFEBEE; color:#C62828; border:1px solid #FFCDD2; font-size:0.6875rem; font-weight:700; padding:2px 8px; border-radius:12px;">✕ Habis</span>'}
+            </div>
+          </div>
+          <div style="padding:1rem; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem; margin-bottom:0.25rem;">
+                <h4 style="font-size:0.9375rem; font-weight:800; color:var(--color-text); margin:0;">${escapeHtml(p.name)}</h4>
+                <span style="font-size:0.9375rem; font-weight:800; color:var(--color-primary); font-family:monospace;">${formatRupiah(p.price)}</span>
+              </div>
+              <p style="font-size:0.75rem; color:var(--color-text-muted); line-height:1.4; margin:0 0 0.75rem 0;">${escapeHtml(p.description || '')}</p>
+            </div>
+            <div style="padding-top:0.5rem; border-top:1px solid var(--color-border-subtle); display:flex; justify-content:space-between; align-items:center; font-size:0.6875rem; color:var(--color-text-subtle);">
+              <span>Status: <strong style="color:${isAvailable ? '#2E7D32' : '#C62828'}">${isAvailable ? 'Tersedia di Bar' : 'Stok Habis'}</strong></span>
+              <span style="font-style:italic;">Pesan di Kasir (POS)</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const contentHtml = `
+      <div style="background:#EBE3D5; padding:0.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--color-border); margin-bottom:1.25rem; font-size:0.8125rem; color:#52453B; display:flex; align-items:center; gap:0.5rem;">
+        <span>ℹ️</span>
+        <span><strong>Tampilan Digital Menu Pelanggan:</strong> Pelanggan hanya dapat melihat menu tanpa fitur transaksi/keranjang. Pemesanan dilayani langsung di meja Kasir POS.</span>
+      </div>
+
+      <div style="background:var(--color-card); padding:1rem; border-radius:var(--radius-md); border:1px solid var(--color-border); margin-bottom:1.25rem; display:flex; flex-direction:column; gap:0.75rem;">
+        <input type="text" id="menu-search-input" value="${escapeHtml(state.menuSearchQuery || '')}" placeholder="Cari kopi, latte, pastry..." class="form-control" style="font-size:0.8125rem;" />
+        <div style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.25rem;">
+          ${catPills}
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:1.25rem;">
+        ${cards}
+      </div>
+    `;
+
+    renderShell(contentHtml, 'Buku Menu Digital (Digital Menu)', 'Tampilan resmi katalog menu kedai untuk pelanggan (View-Only)');
+
+    const searchInput = document.getElementById('menu-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        state.menuSearchQuery = e.target.value;
+        renderDigitalMenuView();
+      });
+    }
+
+    document.querySelectorAll('.btn-menu-cat').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        state.menuActiveCat = e.currentTarget.dataset.cat;
+        renderDigitalMenuView();
+      });
+    });
+  }
+
+  // ==========================================
+  // VIEW 12: PERSATUJUAN PESANAN (ORDER APPROVAL KASIR)
+  // ==========================================
+  async function renderOrdersApprovalView() {
+    renderShell('<div style="text-align:center; padding: 3rem; color: var(--color-text-muted);">Memuat antrean pesanan masuk...</div>', 'Persetujuan Pesanan Pelanggan', 'Kelola, verifikasi, dan tindak lanjuti pesanan masuk meja pelanggan');
+
+    const res = await api('/api/orders');
+    const orders = (res && res.orders) || [];
+
+    const activeTab = state.orderActiveFilter || 'menunggu_konfirmasi';
+
+    const counts = {
+      all: orders.length,
+      menunggu_konfirmasi: orders.filter(o => o.status === 'menunggu_konfirmasi').length,
+      dikonfirmasi: orders.filter(o => o.status === 'dikonfirmasi').length,
+      sedang_disiapkan: orders.filter(o => o.status === 'sedang_disiapkan').length,
+      siap_diambil: orders.filter(o => o.status === 'siap_diambil').length,
+      selesai: orders.filter(o => o.status === 'selesai').length,
+      ditolak_dibatalkan: orders.filter(o => o.status === 'ditolak' || o.status === 'dibatalkan').length
+    };
+
+    const filtered = orders.filter(o => {
+      if (activeTab === 'menunggu_konfirmasi') return o.status === 'menunggu_konfirmasi';
+      if (activeTab === 'dikonfirmasi') return o.status === 'dikonfirmasi';
+      if (activeTab === 'sedang_disiapkan') return o.status === 'sedang_disiapkan';
+      if (activeTab === 'siap_diambil') return o.status === 'siap_diambil';
+      if (activeTab === 'selesai') return o.status === 'selesai';
+      if (activeTab === 'ditolak_dibatalkan') return o.status === 'ditolak' || o.status === 'dibatalkan';
+      return true;
+    });
+
+    const getStatusBadge = (status) => {
+      if (status === 'menunggu_konfirmasi') return '<span class="status-badge" style="background:#FFF8E1; color:#F57F17; border:1px solid #FFE082;">⏳ Menunggu Konfirmasi</span>';
+      if (status === 'dikonfirmasi') return '<span class="status-badge" style="background:#E3F2FD; color:#1565C0; border:1px solid #BBDEFB;">✓ Dikonfirmasi</span>';
+      if (status === 'sedang_disiapkan') return '<span class="status-badge" style="background:#EDE7F6; color:#512DA8; border:1px solid #D1C4E9;">☕ Sedang Disiapkan</span>';
+      if (status === 'siap_diambil') return '<span class="status-badge" style="background:#E8F5E9; color:#2E7D32; border:1px solid #A5D6A7;">🔔 Siap Diambil</span>';
+      if (status === 'selesai') return '<span class="status-badge" style="background:#F5F5F5; color:#616161; border:1px solid #E0E0E0;">✓ Selesai</span>';
+      if (status === 'ditolak') return '<span class="status-badge" style="background:#FFEBEE; color:#C62828; border:1px solid #FFCDD2;">✕ Ditolak</span>';
+      return '<span class="status-badge" style="background:#ECEFF1; color:#546E7A;">✕ Dibatalkan</span>';
+    };
+
+    let cardsHtml = '';
+    if (filtered.length === 0) {
+      cardsHtml = `
+        <div style="grid-column: 1 / -1; background: var(--color-card); border-radius: var(--radius-md); border: 1px solid var(--color-border); padding: 3rem; text-align: center; color: var(--color-text-muted);">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">☕</div>
+          <div style="font-weight: 700; color: var(--color-text); margin-bottom: 0.25rem;">Tidak ada pesanan di kategori ini</div>
+          <div style="font-size: 0.8125rem;">Seluruh pesanan masuk telah Anda verifikasi atau belum ada data di tab ini.</div>
+        </div>
+      `;
+    } else {
+      cardsHtml = filtered.map(order => {
+        const itemsList = (order.items || []).map(i => `
+          <div style="display:flex; justify-content:space-between; font-size:0.8125rem; padding: 0.25rem 0;">
+            <span><strong style="color:var(--color-primary);">${i.quantity}x</strong> ${escapeHtml(i.name)}</span>
+            <span style="font-weight:600;">${formatRupiah(i.subtotal)}</span>
+          </div>
+        `).join('');
+
+        let actionButtons = '';
+        if (order.status === 'menunggu_konfirmasi') {
+          actionButtons = `
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:0.5rem; margin-top: 1rem;">
+              <button class="btn btn-primary btn-sm btn-order-action" data-id="${order.id}" data-action="confirm" style="font-weight:700;">
+                ✓ Konfirmasi Pesanan
+              </button>
+              <button class="btn btn-secondary btn-sm btn-order-action" data-id="${order.id}" data-action="reject" style="border-color:#EF9A9A; color:#C62828; font-weight:700;">
+                ✕ Tolak
+              </button>
+            </div>
+          `;
+        } else if (order.status === 'dikonfirmasi') {
+          actionButtons = `
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary btn-sm btn-order-action" data-id="${order.id}" data-action="prepare" style="width:100%; font-weight:700; background:#3949AB;">
+                ☕ Proses Pesanan (Mulai Racik)
+              </button>
+            </div>
+          `;
+        } else if (order.status === 'sedang_disiapkan') {
+          actionButtons = `
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary btn-sm btn-order-action" data-id="${order.id}" data-action="ready" style="width:100%; font-weight:700; background:#2E7D32;">
+                🔔 Tandai Siap Diambil di Counter
+              </button>
+            </div>
+          `;
+        } else if (order.status === 'siap_diambil') {
+          actionButtons = `
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-primary btn-sm btn-order-action" data-id="${order.id}" data-action="complete" style="width:100%; font-weight:700;">
+                ✓ Selesaikan Pesanan (Diserahkan)
+              </button>
+            </div>
+          `;
+        } else {
+          actionButtons = `
+            <div style="margin-top: 1rem; text-align:center; font-size:0.75rem; color:var(--color-text-subtle); padding:0.4rem; background:var(--color-bg); border-radius:var(--radius-sm);">
+              Status Final (${escapeHtml(order.status)})
+            </div>
+          `;
+        }
+
+        return `
+          <div style="background:var(--color-card); border-radius:var(--radius-md); border:1px solid var(--color-border); padding:1.25rem; display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow-sm);">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem; padding-bottom:0.75rem; border-bottom:1px solid var(--color-border-subtle);">
+                <div>
+                  <div style="font-family:monospace; font-weight:800; color:var(--color-primary); font-size:0.875rem;">${order.orderNumber}</div>
+                  <div style="font-weight:700; font-size:0.875rem; color:var(--color-text); margin-top:0.2rem;">👤 ${escapeHtml(order.customerName)} (${escapeHtml(order.tableNumber || 'Meja Umum')})</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-subtle); margin-top:0.15rem;">🕒 ${formatDateTime(order.createdAt)}</div>
+                </div>
+                <div>${getStatusBadge(order.status)}</div>
+              </div>
+
+              ${order.notes ? `<div style="font-size:0.75rem; background:#FFF8E1; border:1px solid #FFE082; padding:0.4rem 0.6rem; border-radius:var(--radius-sm); color:#6D4C41; margin-bottom:0.75rem;">Catatan: &ldquo;${escapeHtml(order.notes)}&rdquo;</div>` : ''}
+              ${order.rejectedReason ? `<div style="font-size:0.75rem; background:#FFEBEE; border:1px solid #FFCDD2; padding:0.4rem 0.6rem; border-radius:var(--radius-sm); color:#C62828; margin-bottom:0.75rem;">Alasan Tolak: ${escapeHtml(order.rejectedReason)}</div>` : ''}
+
+              <div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px dashed var(--color-border-subtle);">
+                <div style="font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-text-subtle); font-weight:700; margin-bottom:0.35rem;">Daftar Menu:</div>
+                ${itemsList}
+              </div>
+            </div>
+
+            <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--color-border-subtle);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.8125rem; color:var(--color-text-muted);">Total Tagihan:</span>
+                <span style="font-size:1.125rem; font-weight:800; color:var(--color-primary);">${formatRupiah(order.totalAmount)}</span>
+              </div>
+              ${actionButtons}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const contentHtml = `
+      <!-- Stats Bar -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:0.75rem; margin-bottom:1.25rem;">
+        <div style="background:var(--color-card); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--color-border);">
+          <div style="font-size:0.6875rem; font-weight:700; color:var(--color-text-subtle); text-transform:uppercase;">Total Masuk</div>
+          <div style="font-size:1.25rem; font-weight:800; color:var(--color-text); margin-top:0.25rem;">${counts.all}</div>
+        </div>
+        <div style="background:#FFF8E1; padding:0.85rem; border-radius:var(--radius-md); border:1px solid #FFE082;">
+          <div style="font-size:0.6875rem; font-weight:700; color:#F57F17; text-transform:uppercase;">⏳ Menunggu</div>
+          <div style="font-size:1.25rem; font-weight:800; color:#E65100; margin-top:0.25rem;">${counts.menunggu_konfirmasi}</div>
+        </div>
+        <div style="background:#E3F2FD; padding:0.85rem; border-radius:var(--radius-md); border:1px solid #BBDEFB;">
+          <div style="font-size:0.6875rem; font-weight:700; color:#1565C0; text-transform:uppercase;">✓ Dikonfirmasi</div>
+          <div style="font-size:1.25rem; font-weight:800; color:#0D47A1; margin-top:0.25rem;">${counts.dikonfirmasi}</div>
+        </div>
+        <div style="background:#EDE7F6; padding:0.85rem; border-radius:var(--radius-md); border:1px solid #D1C4E9;">
+          <div style="font-size:0.6875rem; font-weight:700; color:#512DA8; text-transform:uppercase;">☕ Disiapkan</div>
+          <div style="font-size:1.25rem; font-weight:800; color:#311B92; margin-top:0.25rem;">${counts.sedang_disiapkan}</div>
+        </div>
+        <div style="background:#E8F5E9; padding:0.85rem; border-radius:var(--radius-md); border:1px solid #A5D6A7;">
+          <div style="font-size:0.6875rem; font-weight:700; color:#2E7D32; text-transform:uppercase;">🔔 Siap Ambil</div>
+          <div style="font-size:1.25rem; font-weight:800; color:#1B5E20; margin-top:0.25rem;">${counts.siap_diambil}</div>
+        </div>
+        <div style="background:var(--color-card); padding:0.85rem; border-radius:var(--radius-md); border:1px solid var(--color-border);">
+          <div style="font-size:0.6875rem; font-weight:700; color:var(--color-text-subtle); text-transform:uppercase;">Selesai</div>
+          <div style="font-size:1.25rem; font-weight:800; color:var(--color-text); margin-top:0.25rem;">${counts.selesai}</div>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.75rem; margin-bottom:1.25rem;">
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'menunggu_konfirmasi' ? 'btn-primary' : 'btn-secondary'}" data-tab="menunggu_konfirmasi">
+          ⏳ Menunggu (${counts.menunggu_konfirmasi})
+        </button>
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'dikonfirmasi' ? 'btn-primary' : 'btn-secondary'}" data-tab="dikonfirmasi">
+          ✓ Dikonfirmasi (${counts.dikonfirmasi})
+        </button>
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'sedang_disiapkan' ? 'btn-primary' : 'btn-secondary'}" data-tab="sedang_disiapkan">
+          ☕ Disiapkan (${counts.sedang_disiapkan})
+        </button>
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'siap_diambil' ? 'btn-primary' : 'btn-secondary'}" data-tab="siap_diambil">
+          🔔 Siap Diambil (${counts.siap_diambil})
+        </button>
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'selesai' ? 'btn-primary' : 'btn-secondary'}" data-tab="selesai">
+          Selesai (${counts.selesai})
+        </button>
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'ditolak_dibatalkan' ? 'btn-primary' : 'btn-secondary'}" data-tab="ditolak_dibatalkan">
+          Ditolak / Batal (${counts.ditolak_dibatalkan})
+        </button>
+        <button class="btn btn-sm btn-filter-tab ${activeTab === 'all' ? 'btn-primary' : 'btn-secondary'}" data-tab="all">
+          Semua (${counts.all})
+        </button>
+      </div>
+
+      <!-- Orders Grid -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:1.25rem;">
+        ${cardsHtml}
+      </div>
+    `;
+
+    renderShell(contentHtml, 'Persetujuan Pesanan Pelanggan', 'Verifikasi dan tindak lanjuti pesanan masuk meja pelanggan');
+
+    // Tab buttons event
+    document.querySelectorAll('.btn-filter-tab').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        state.orderActiveFilter = e.currentTarget.dataset.tab;
+        renderOrdersApprovalView();
+      });
+    });
+
+    // Order Action buttons event
+    document.querySelectorAll('.btn-order-action').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const action = e.currentTarget.dataset.action;
+
+        let rejectedReason = '';
+        if (action === 'reject') {
+          rejectedReason = prompt('Masukkan alasan penolakan pesanan:', 'Bahan baku menu tertentu sedang habis.');
+          if (rejectedReason === null) return;
+        }
+
+        e.currentTarget.disabled = true;
+        e.currentTarget.innerText = 'Memproses...';
+
+        const updateRes = await api(`/api/orders/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action, rejectedReason })
+        });
+
+        if (updateRes && updateRes.success) {
+          showToast(updateRes.message || 'Status pesanan berhasil diperbarui.', 'success');
+          renderOrdersApprovalView();
+        } else {
+          showToast((updateRes && updateRes.error) || 'Gagal mengubah status pesanan.', 'error');
+          e.currentTarget.disabled = false;
+        }
+      });
+    });
+  }
+
+  // ==========================================
   // ROOT ROUTER
   // ==========================================
   function renderApp() {
@@ -2703,6 +3708,19 @@
         renderPosView();
         break;
       case 'products':
+        state.productActiveTab = 'list';
+        renderProductsView();
+        break;
+      case 'categories':
+        state.productActiveTab = 'categories';
+        renderProductsView();
+        break;
+      case 'stocks':
+        state.productActiveTab = 'stocks';
+        renderProductsView();
+        break;
+      case 'mutations':
+        state.productActiveTab = 'mutations';
         renderProductsView();
         break;
       case 'transactions':
@@ -2717,14 +3735,45 @@
       case 'settings':
         renderSettingsView();
         break;
+      case 'products_info':
+        renderProductsInfoView();
+        break;
+      case 'profile':
+        renderProfileView();
+        break;
+      case 'digital_menu':
+        renderDigitalMenuView();
+        break;
+      case 'orders':
+        renderOrdersApprovalView();
+        break;
       default:
-        renderDashboardView();
+        if (state.user && state.user.role === 'kasir') {
+          renderPosView();
+        } else {
+          renderDashboardView();
+        }
     }
   }
 
   // Global Interface for inline DOM callbacks
   window.BrewApp = {
     navigateTo,
+    switchRole: (role) => {
+      if (role === 'admin') {
+        state.user = defaultAdminUser;
+        state.token = 'mock-session-token-admin';
+        state.activeView = 'dashboard';
+        renderApp();
+        showToast('Beralih ke Mode Administrator (Simulasi Mock Data)', 'info');
+      } else {
+        state.user = defaultKasirUser;
+        state.token = 'mock-session-token-kasir';
+        state.activeView = 'pos';
+        renderApp();
+        showToast('Beralih ke Mode Kasir POS (Simulasi Mock Data)', 'info');
+      }
+    },
     showReceiptModal,
     downloadReceiptPdf,
     addToCart,
@@ -2738,15 +3787,34 @@
     toggleProductStatus,
     openCategoryModal,
     toggleCategoryStatus,
+    openRestockModal,
+    openCorrectionModal,
     openAdjustStockModal,
     openUserModal,
     renderReportsView,
     setProductTab,
+    setInfoCategory: (catId) => {
+      state.productsInfoCat = catId;
+      renderProductsInfoView();
+    },
+    orderInPos: (productId) => {
+      if (productId) {
+        addToCart(productId);
+      }
+      navigateTo('pos');
+    },
     showToast
   };
 
   // Initialization
   document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const authRes = await api('/api/auth/me');
+      if (authRes && authRes.success && authRes.user) {
+        state.user = authRes.user;
+        state.activeView = authRes.user.role === 'admin' ? 'dashboard' : 'pos';
+      }
+    } catch (_) {}
     await loadSettings();
     renderApp();
   });

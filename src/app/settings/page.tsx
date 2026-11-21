@@ -26,24 +26,29 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('brewspace_token') : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch('/api/auth/me', { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => {
-        if (!data.success || !data.user || data.user.role !== 'admin') {
+        if (!data.success || !data.user) {
+          router.push('/');
+        } else if (data.user.role !== 'admin') {
+          showToast('Akses ditolak: Pengaturan Toko hanya dapat diakses oleh Administrator.', 'error');
           router.push('/pos');
         } else {
           setUser(data.user);
+          fetch('/api/settings')
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.success && d.settings) {
+                setSettings(d.settings);
+              }
+            });
         }
       })
       .catch(() => router.push('/'));
-
-    fetch('/api/settings')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success && d.settings) {
-          setSettings(d.settings);
-        }
-      });
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {

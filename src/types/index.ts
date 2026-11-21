@@ -41,6 +41,46 @@ export interface CartItem {
   quantity: number;
 }
 
+export type OrderStatus =
+  | 'menunggu_konfirmasi'
+  | 'dikonfirmasi'
+  | 'sedang_disiapkan'
+  | 'siap_diambil'
+  | 'selesai'
+  | 'ditolak'
+  | 'dibatalkan';
+
+export interface CustomerOrderItem {
+  productId: number;
+  name: string;
+  categoryName?: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  notes?: string;
+}
+
+export interface CustomerOrder {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  tableNumber?: string;
+  notes?: string;
+  items: CustomerOrderItem[];
+  subtotal: number;
+  tax: number;
+  totalAmount: number;
+  status: OrderStatus;
+  statusNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+  confirmedAt?: string;
+  confirmedBy?: string;
+  rejectedReason?: string;
+  cancelledAt?: string;
+}
+
 export interface Transaction {
   id: number;
   invoice_number: string;
@@ -58,6 +98,9 @@ export interface Transaction {
   notes?: string | null;
   created_at: string;
   total_items?: number;
+  cancelled_at?: string | null;
+  cancelled_by?: string | null;
+  cancel_reason?: string | null;
   items?: TransactionDetail[];
 }
 
@@ -75,7 +118,7 @@ export interface TransactionDetail {
 export interface StockMovement {
   id: number;
   product_id: number;
-  change_type: 'sale' | 'restock' | 'adjustment' | 'initial';
+  change_type: 'sale' | 'restock' | 'adjustment' | 'initial' | 'cancellation';
   quantity_change: number;
   previous_stock: number;
   current_stock: number;

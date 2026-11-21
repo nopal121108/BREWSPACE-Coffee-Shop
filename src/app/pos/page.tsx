@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import ReceiptModal from '@/components/ReceiptModal';
@@ -20,7 +21,9 @@ import {
   Receipt,
   User as UserIcon,
   CreditCard,
-  Banknote
+  Banknote,
+  ClipboardCheck,
+  BellRing
 } from 'lucide-react';
 
 export default function PosPage() {
@@ -45,7 +48,10 @@ export default function PosPage() {
 
   // Load User & Products
   useEffect(() => {
-    fetch('/api/auth/me')
+    const token = typeof window !== 'undefined' ? localStorage.getItem('brewspace_token') : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch('/api/auth/me', { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => {
         if (!data.success || !data.user) {
@@ -220,7 +226,7 @@ export default function PosPage() {
           <div className="flex-1 flex flex-col p-6 overflow-hidden">
             {/* Search & Category Filter Bar */}
             <div className="space-y-4 mb-4">
-              <div className="flex gap-4">
+              <div className="flex gap-3 items-center">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -231,6 +237,16 @@ export default function PosPage() {
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-coffee-200 bg-white focus:outline-none focus:ring-2 focus:ring-coffee-600 text-sm shadow-sm"
                   />
                 </div>
+                <Link
+                  href="/menu"
+                  target="_blank"
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-coffee-700 bg-coffee-50 hover:bg-coffee-100 border border-coffee-200 transition shrink-0 shadow-xs"
+                  title="Buka Buku Menu Digital Pelanggan di tab baru"
+                >
+                  <Coffee className="w-4 h-4" />
+                  <span>Buku Menu Digital &rarr;</span>
+                </Link>
+              </div>
               </div>
 
               {/* Category Pills */}

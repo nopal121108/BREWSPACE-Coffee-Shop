@@ -9,31 +9,72 @@ const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function createSession(user) {
   const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + SESSION_TTL_MS;
   const sessionData = {
     userId: user.id,
     username: user.username,
     role: user.role,
     fullName: user.full_name,
-    expiresAt: Date.now() + SESSION_TTL_MS
+    expiresAt
   };
   sessions.set(token, sessionData);
+
+  try {
+    db.prepare(`
+      INSERT OR REPLACE INTO sessions (token, user_id, username, role, full_name, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(token, user.id, user.username, user.role, user.full_name, expiresAt);
+  } catch (err) {
+    console.error('Failed to persist session to database:', err);
+  }
+
   return token;
 }
 
 function getSession(token) {
   if (!token) return null;
-  const session = sessions.get(token);
-  if (!session) return null;
-  if (Date.now() > session.expiresAt) {
-    sessions.delete(token);
+  const cached = sessions.get(token);
+  if (cached) {
+    if (Date.now() > cached.expiresAt) {
+      sessions.delete(token);
+      try { db.prepare('DELETE FROM sessions WHERE token = ?').run(token); } catch (_) {}
+      return null;
+    }
+    return cached;
+  }
+
+  // Fallback to SQLite DB
+  try {
+    const row = db.prepare('SELECT * FROM sessions WHERE token = ?').get(token);
+    if (!row) return null;
+
+    if (Date.now() > row.expires_at) {
+      db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      return null;
+    }
+
+    const sessionData = {
+      userId: row.user_id,
+      username: row.username,
+      role: row.role,
+      fullName: row.full_name,
+      expiresAt: row.expires_at
+    };
+
+    sessions.set(token, sessionData);
+    return sessionData;
+  } catch (err) {
+    console.error('Failed to query session from database:', err);
     return null;
   }
-  return session;
 }
 
 function destroySession(token) {
   if (token) {
     sessions.delete(token);
+    try {
+      db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    } catch (_) {}
   }
 }
 
