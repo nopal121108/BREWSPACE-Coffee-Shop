@@ -21,9 +21,7 @@ import {
   Receipt,
   User as UserIcon,
   CreditCard,
-  Banknote,
-  ClipboardCheck,
-  BellRing
+  Banknote
 } from 'lucide-react';
 
 export default function PosPage() {
@@ -246,7 +244,6 @@ export default function PosPage() {
                   <Coffee className="w-4 h-4" />
                   <span>Buku Menu Digital &rarr;</span>
                 </Link>
-              </div>
               </div>
 
               {/* Category Pills */}
